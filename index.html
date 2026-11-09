@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Previsão Faturamento Fábrica · Central Eurovia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#1b1d20; --panel:#222529; --panel2:#272a2f; --line:#33373d; --line2:#2b2e33;
+  --text:#e7e8ea; --muted:#8d9399; --dim:#5f656c;
+  --yellow:#FFCC33; --yellow2:#EFDF00; --ink:#16181a;
+  --warn:#ff9f43; --bad:#ff5d5d; --ok:#3dba74;
+  --sans:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+
+/* topo */
+.top{position:relative;background:#141414;border-bottom:3px solid var(--yellow);padding:0 20px}
+.topbar{display:flex;flex-wrap:nowrap;align-items:center;gap:18px;min-height:78px}
+.logo{flex:0 0 auto;display:flex;align-items:center;gap:9px}
+.logo .dia{height:46px;width:auto;display:block}
+.logo .wm{height:16px;width:auto;display:block}
+.divider{flex:0 0 auto;width:2px;align-self:stretch;background:#2e2e2e;margin:16px 0}
+.brand{flex:1 1 auto;min-width:0;padding:8px 0}
+.brand h1{margin:0;font-size:clamp(17px,3.4vw,33px);font-weight:800;letter-spacing:1.2px;line-height:1.04;text-transform:uppercase}
+.brand h1 .hl{color:var(--yellow)}
+.brand .sub{color:#9a9a9a;font-size:clamp(8.5px,1.5vw,11.5px);font-weight:600;letter-spacing:clamp(1px,.5vw,3px);margin-top:7px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .meta{color:var(--muted);font-size:12.5px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:620px){
+  .top{padding:0 12px}
+  .hdr-actions{position:absolute;top:10px;right:12px;padding:0}
+  .btn-sync{padding:6px 12px;font-size:13px}
+  .sync-note{display:none}
+  .topbar{gap:11px;min-height:62px}
+  .logo .dia{height:34px}
+  .logo .wm{height:12px}
+  .divider{display:none}
+  .brand h1{letter-spacing:.5px;line-height:1.1}
+  .brand .sub{letter-spacing:.5px}
+}
+@media (max-width:380px){ .logo .dia{height:30px} .logo .wm{height:11px} }
+.hdr-actions{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding:8px 0}
+.btn-sync[hidden]{display:none}
+.btn-sync{display:inline-flex;align-items:center;gap:7px;background:var(--yellow);color:var(--ink);border:0;padding:8px 16px;border-radius:3px;font-weight:800;letter-spacing:.4px;cursor:pointer;white-space:nowrap}
+.btn-sync:hover{filter:brightness(1.05)}
+.btn-sync:disabled{opacity:.6;cursor:progress}
+.btn-sync .sp{width:13px;height:13px;border:2px solid rgba(0,0,0,.35);border-top-color:var(--ink);border-radius:50%;display:none}
+.btn-sync.loading .sp{display:inline-block;animation:spin .7s linear infinite}
+.btn-sync.loading .lbl::after{content:"…"}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sync-note{font-size:11px;color:var(--muted);white-space:nowrap}
+.sync-note.ok{color:#4fd38a}.sync-note.err{color:#ff8585}
+.pend-badge{display:none;background:transparent;border:1px solid var(--warn);color:var(--warn);padding:5px 12px;border-radius:3px;cursor:pointer;font-weight:600}
+.pend-badge.show{display:inline-block}
+.tabs{display:flex;gap:2px;padding:14px 24px 0;border-bottom:2px solid var(--yellow)}
+.tab{background:var(--panel);border:0;padding:10px 22px;font-weight:700;letter-spacing:.6px;color:var(--muted);cursor:pointer;border-radius:3px 3px 0 0}
+.tab[aria-selected="true"]{background:var(--yellow);color:var(--ink)}
+.tab:hover:not([aria-selected="true"]){color:var(--text)}
+.view{display:none;padding:18px 24px 40px}
+.view.on{display:block}
+
+/* barra de filtros */
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.bar input[type=search],.bar select,.fld{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:7px 10px;min-width:150px}
+.bar input[type=search]{min-width:260px}
+.bar .count{margin-left:auto;color:var(--muted)}
+.bar .count b{color:var(--text);font-size:17px}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:7px 14px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--yellow)}
+.btn.pri{background:var(--yellow);color:var(--ink);border-color:var(--yellow)}
+.btn.danger{border-color:#5a2b2b;color:#ff8a8a}
+.btn.sm{padding:4px 10px;font-size:13px}
+
+/* tabela TOTAL (estilo da referência) */
+.tablewrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 240px);border:1px solid var(--line);border-radius:3px}
+table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:1080px}
+.grid th{position:sticky;top:0;z-index:3;background:var(--yellow);color:var(--ink);font-size:12px;font-weight:800;letter-spacing:.5px;text-align:left;padding:10px 12px;border-right:1px solid rgba(0,0,0,.12);white-space:nowrap}
+.grid th.c,.grid td.c{text-align:center}
+.grid td{padding:11px 12px;border-bottom:1px solid var(--line2);border-right:1px solid var(--line2);font-size:14px;white-space:nowrap;background:var(--bg)}
+.grid tbody tr:hover td:not(.span){background:#202327}
+.grid td.span{vertical-align:top;font-weight:700;letter-spacing:.3px}
+.grid td.span .stk{position:sticky;top:44px}
+.grid td.praca{border-left:3px solid currentColor;font-size:15px;min-width:130px}
+.grid td.fam{font-size:14px;min-width:110px}
+.mono{font-family:var(--mono);font-size:12.5px}
+.grid td.cor{font-size:12px;letter-spacing:.3px;text-align:center}
+.grid td.muted{color:var(--muted)}
+.grid tr.tot td{background:#1f2124;font-weight:700;letter-spacing:.6px;font-size:14px;cursor:pointer;border-left:3px solid currentColor;padding:9px 14px}
+.grid tr.tot td:hover{background:#25282c}
+.flag{color:var(--warn);font-family:var(--mono);font-size:12.5px}
+.flag::before{content:"⚠ ";font-family:var(--sans)}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;letter-spacing:.4px;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.pill.disp{background:rgba(61,186,116,.14);color:#4fd38a;border:1px solid rgba(61,186,116,.4)}
+.pill.resv{background:rgba(255,93,93,.14);color:#ff8585;border:1px solid rgba(255,93,93,.45);cursor:help}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.grid tr.isresv td:not(.span){background:rgba(255,93,93,.05)}
+.grid tr.isresv:hover td:not(.span){background:rgba(255,93,93,.09)}
+.resbtn{background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:4px 10px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.resbtn:hover{border-color:var(--yellow)}
+.chip{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:12px;margin:0 6px 6px 0}
+.chip b{color:var(--text)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.modal.on{display:flex}
+.modal .card{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--yellow);border-radius:4px;max-width:460px;width:100%;padding:22px 24px}
+.modal h3{margin:0 0 4px;font-size:19px}
+.modal .sub{color:var(--muted);font-size:13.5px;margin:0 0 16px}
+.modal .veh{background:var(--bg);border:1px solid var(--line2);border-radius:3px;padding:10px 12px;margin-bottom:16px;font-size:13.5px;line-height:1.7}
+.modal .veh b{color:var(--text)}
+.modal .veh .mono{font-size:12.5px}
+.modal label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+.modal .fld{width:100%;min-width:0}
+.modal .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.modal .merr{color:var(--bad);font-size:13px;min-height:1.1em;margin-top:8px}
+
+/* RESUMO */
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-bottom:22px}
+.strip .cell{background:var(--panel);padding:14px 18px 16px;border-top:3px solid var(--c,var(--yellow))}
+.strip .cell .lb{font-weight:700;letter-spacing:.6px;color:var(--c,var(--yellow));font-size:14px}
+.strip .cell .n{font-size:42px;font-weight:800;line-height:1.05;margin-top:4px;font-variant-numeric:tabular-nums}
+.strip .cell .s{color:var(--muted);font-size:13px}
+.strip .bar2{height:4px;background:var(--line);margin-top:10px;border-radius:2px;overflow:hidden}
+.strip .bar2 i{display:block;height:100%;background:var(--c,var(--yellow))}
+.rgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:1100px){.rgrid{grid-template-columns:1fr}}
+.panel h2{font-size:17px;margin:0 0 10px;font-weight:700;display:flex;align-items:center;gap:12px}
+.panel h2 .btn{margin-left:auto}
+table.mx{border-collapse:separate;border-spacing:0;width:100%;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.mx th{background:var(--yellow);color:var(--ink);font-size:12px;font-weight:800;letter-spacing:.5px;padding:9px 12px;text-align:center;white-space:nowrap}
+.mx th:first-child{text-align:left}
+.mx td{padding:8px 12px;border-bottom:1px solid var(--line2);text-align:center;font-variant-numeric:tabular-nums;font-size:14px}
+.mx td:first-child{text-align:left}
+.mx tr.famrow td{font-weight:700;background:#202226;cursor:pointer}
+.mx tr.famrow td:first-child{letter-spacing:.4px}
+.mx tr.ver td{font-size:13.5px}
+.mx tr.ver td:first-child{padding-left:30px;color:#c9ccd0}
+.mx td.t{font-weight:800;border-left:1px solid var(--line)}
+.mx tr.gt td{background:var(--panel2);font-weight:800;border-top:2px solid var(--yellow);letter-spacing:.4px}
+.mx .z{color:var(--dim)}
+.mx .code{color:var(--muted);font-family:var(--mono);font-size:11.5px;margin-left:6px}
+.caret{display:inline-block;width:14px;color:var(--muted)}
+
+/* AJUSTES */
+.lock{max-width:380px;margin:60px auto;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--yellow);padding:26px;border-radius:3px}
+.lock h2{margin:0 0 6px;font-size:20px}
+.lock p{color:var(--muted);margin:0 0 16px}
+.lock .row{display:flex;gap:8px}
+.lock input{flex:1}
+.lock .err{color:var(--bad);margin-top:10px;min-height:1.2em;font-size:14px}
+.adj{display:grid;gap:22px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:18px 20px}
+.box h3{margin:0 0 4px;font-size:18px}
+.box .help{color:var(--muted);margin:0 0 14px;font-size:14px;max-width:80ch}
+.box.warn{border-left:3px solid var(--warn)}
+.drop{border:1.5px dashed var(--line);border-radius:3px;padding:26px;text-align:center;color:var(--muted);cursor:pointer}
+.drop.over{border-color:var(--yellow);color:var(--text)}
+.drop b{color:var(--yellow)}
+.info{margin-top:12px;font-size:14px;color:var(--muted)}
+.info b{color:var(--text)}
+table.ed{border-collapse:collapse;width:100%}
+.ed th{text-align:left;font-size:12px;letter-spacing:.4px;color:var(--muted);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line)}
+.ed td{padding:5px 8px;border-bottom:1px solid var(--line2);font-size:14px;vertical-align:middle}
+.ed input.fld{width:100%;min-width:0;padding:5px 8px}
+.ed .sug{color:var(--muted);font-size:12px;margin-top:3px}
+.cads{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:18px;align-items:start}
+@media (max-width:1200px){.cads{grid-template-columns:1fr}}
+.cad h4{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px}
+.cad h4 small{color:var(--muted);font-weight:500}
+.cad .scroll{max-height:420px;overflow:auto;border:1px solid var(--line2);border-radius:3px}
+.cad .add{display:flex;gap:6px;margin-bottom:8px}
+.cad .add input{flex:1;min-width:0}
+.cad .filter{width:100%;margin-bottom:8px}
+.x{background:none;border:0;color:var(--dim);cursor:pointer;font-size:16px;padding:2px 6px}
+.x:hover{color:var(--bad)}
+.vform{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:14px}
+.vform label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.vform .fld{width:100%;min-width:0}
+.vform .orig{font-size:12px;color:var(--dim);margin-top:3px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--yellow);color:var(--ink);font-weight:700;padding:10px 18px;border-radius:3px;opacity:0;transition:.2s;pointer-events:none;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.rowflex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+@media (max-width:640px){
+  html,body{font-size:14px}
+  .view{padding:14px 12px 40px}
+  .tabs{padding:12px 12px 0;overflow-x:auto}
+  .tab{padding:9px 16px;white-space:nowrap}
+  .bar{gap:8px}
+  .bar input[type=search]{min-width:100%;order:-1}
+  .bar select,.bar .btn{flex:1 1 46%;min-width:0}
+  .bar .count{flex-basis:100%;margin-left:0}
+  .tablewrap{max-height:none}
+  table.grid{min-width:860px}
+  .rgrid{gap:14px}
+  .rdir{grid-template-columns:1fr}
+  .cads{grid-template-columns:1fr}
+  .strip{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+  .strip .cell .n{font-size:32px}
+  .lock{margin:40px auto;max-width:100%}
+  .modal{padding:12px;align-items:flex-end}
+  .modal .card{max-width:100%;border-radius:10px 10px 4px 4px}
+  .vform{grid-template-columns:1fr}
+  .rowflex .fld{min-width:0;flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="topbar">
+    <div class="logo"><img class="dia" src="data:image/png;base64,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" alt=""><img class="wm" src="data:image/png;base64,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" alt="EUROVIA"></div>
+    </div>
+    <div class="divider" aria-hidden="true"></div>
+    <div class="brand">
+      <h1>PREVISÃO FATURAMENTO <span class="hl">FÁBRICA</span></h1>
+      <div class="sub">REDE RENAULT · PERNAMBUCO · PARAÍBA · BAHIA</div>
+      <div class="meta" id="meta"></div>
+    </div>
+    <div class="hdr-actions">
+      <button class="btn-sync" id="btnSync" title="Baixar a última versão do backup no Drive" hidden><span class="sp"></span><span class="lbl">Atualizar</span></button>
+      <span class="sync-note" id="syncNote"></span>
+      <button class="pend-badge" id="pendBadge" title="Abrir AJUSTES para destinar os códigos sem cadastro"></button>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" role="tab" data-tab="total" aria-selected="true">TOTAL</button>
+  <button class="tab" role="tab" data-tab="resumo" aria-selected="false">RESUMO</button>
+  <button class="tab" role="tab" data-tab="ajustes" aria-selected="false">AJUSTES</button>
+</nav>
+
+<!-- TOTAL -->
+<section class="view on" id="v-total">
+  <div class="bar">
+    <input type="search" id="fQ" placeholder="Buscar chassi, modelo, opção…">
+    <select id="fPraca"></select>
+    <select id="fFam"></select>
+    <select id="fCor"></select>
+    <select id="fStatus"><option value="">Disponíveis e reservados</option><option value="disp">Só disponíveis</option><option value="resv">Só reservados</option></select>
+    <button class="btn sm" id="btnExpand">Recolher praças</button>
+    <button class="btn sm" id="btnExport">Exportar Excel</button>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="tablewrap">
+    <table class="grid">
+      <thead><tr>
+        <th>PRAÇA</th><th>FAMÍLIA</th><th>VERSÃO</th><th>MODELO</th><th class="c">COR</th><th>CHASSI</th>
+        <th>OPÇÕES</th><th class="c">PREV. MADC</th><th class="c">STATUS</th>
+      </tr></thead>
+      <tbody id="tbTotal"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- RESUMO -->
+<section class="view" id="v-resumo">
+  <div class="strip" id="strip"></div>
+  <div class="rgrid">
+    <div class="panel">
+      <h2>Modelos por praça <button class="btn sm" id="btnVer">Recolher versões</button></h2>
+      <table class="mx" id="mxModelo"></table>
+    </div>
+    <div class="panel">
+      <h2>Cores por praça</h2>
+      <table class="mx" id="mxCor"></table>
+    </div>
+  </div>
+</section>
+
+<!-- AJUSTES -->
+<section class="view" id="v-ajustes">
+  <div class="lock" id="lock">
+    <h2>Área de ajustes</h2>
+    <p>Digite a senha para importar planilhas e editar cadastros.</p>
+    <div class="row">
+      <input class="fld" type="password" id="pwd" placeholder="Senha" autocomplete="off">
+      <button class="btn pri" id="btnLogin">Entrar</button>
+    </div>
+    <div class="err" id="pwdErr"></div>
+  </div>
+  <div class="adj" id="adj" hidden></div>
+</section>
+
+<datalist id="dlPraca"></datalist>
+<datalist id="dlCor"></datalist>
+<datalist id="dlModelo"></datalist>
+<datalist id="dlFam"></datalist>
+<datalist id="dlChassi"></datalist>
+<input type="file" id="fileXlsx" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+<input type="file" id="fileCfg" accept=".json" hidden>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="card">
+    <h3 id="mTitle">Solicitar reserva</h3>
+    <p class="sub" id="mSub"></p>
+    <div class="veh" id="mVeh"></div>
+    <div id="mBody"></div>
+    <div class="merr" id="mErr"></div>
+    <div class="acts"><button class="btn" id="mCancel">Cancelar</button><button class="btn pri" id="mOk"></button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ DADOS INICIAIS ============ */
+const EMBED_FILE = "";
+const EMBED_ROWS = []; // [chassi, conta, versao, estof, opcoes, cor, madc, modelo]
+
+const DEFAULT_CFG = {
+  contas: { "": "PERNAMBUCO", "BRE000415": "BAHIA", "BRE001264": "PARAÍBA" },
+  cores: {
+    "676":"PRETO NACRE","369":"BRANCO 369","KNH":"PRATA ETOILE","KNG":"CINZA (OUTROS)","RQH":"AZUL",
+    "KNU":"CINZA OROCH","B76":"VERMELHO FOGO","727":"VERMELHO VIVO","389":"BRANCO (MASTER)","RRM":"AZUL MERCURE"
+  },
+  versoes: {
+    "EXPZMCM 3GSC":"RENAULT/KWID ZEN 2","EE2XMCM 3GSC":"RENAULT/KWID EVOLUTION","DYNZMCM 3GSC":"RENAULT/KWID INTENS 2",
+    "TE3XMCM 3GSC":"RENAULT/KWID TECHNO","BITZMCM 3GSC":"RENAULT/KWID ICONIC","OUTZMCM 3GSC":"RENAULT/KWID OUTSID 2",
+    "OUTXMCM 3GSC":"RENAULT/KWID OUTSID 2","E2 M2 B4C2R":"E-KWID TECHNO",
+    "EVOP A7A3G S":"RENAULT/KARDIAN AUTHENTIC AT","EV27 A7 3L S":"RENAULT/KARDIAN VIBE 1.0T MT",
+    "EVO A7 3G S":"RENAULT/KARDIAN EVOL MT","EV25 A7 3G S":"RENAULT/KARDIAN EVOL MT",
+    "EVO A7A3G S":"RENAULT/KARDIAN EVOL AT","EV25 A7A3G S":"RENAULT/KARDIAN EVOL AT",
+    "EV26 A7A3G S":"RENAULT/KARDIAN EVOL AT",
+    "TEC A7A3G S":"RENAULT/KARDIAN TECHNO AT","TE25 A7A3G S":"RENAULT/KARDIAN TECHNO AT","TE26 A7A3G S":"RENAULT/KARDIAN TECHNO AT",
+    "IC25 A7A3G S":"RENAULT/KARDIAN ICONIC AT","IC26 A7A3G S":"RENAULT/KARDIAN ICONIC AT",
+    "EL M3H3L82Y":"RENAULT/KOLEOS E-TECH ESPIRIT ALPINE",
+    "R2 2 A2A L8S":"RENAULT/BOREAL EVOLUTION","R272 A2A L8S":"RENAULT/BOREAL EVOLUTION",
+    "R3 2 A2A L8S":"RENAULT/BOREAL TECHNO","R372 A2A L8S":"RENAULT/BOREAL TECHNO","R4 2 A2A L8S":"RENAULT/BOREAL ICONIC",
+    "E1P3 J2M L8S":"RENAULT/DUSTER ZEN PLUS 1.6","N2 2 J2M L8S":"RENAULT/DUSTER INTP MT","E2 2 J2M L8S":"RENAULT/DUSTER INTP MT",
+    "N2 2 J2C L8S":"RENAULT/DUSTER INTP CVT","E2 2 J2C L8S":"RENAULT/DUSTER INTP CVT",
+    "N2C2 J2C L8S":"RENAULT/DUSTER ICOP CVT","E2C2 J2C L8S":"RENAULT/DUSTER ICOP CVT",
+    "N2 2 A2C L8S":"RENAULT/DUSTER ICOUT TCE","E2 2 A2C L8S":"RENAULT/DUSTER ICOUT TCE",
+    "U0 KC2 MP LS":"OROCH PRO 16","F0 KC2 MP LS":"OROCH PRO 16",
+    "U1 KC2 MP LS":"OROCH INTENSE 16M","F1 KC2 MP LS":"OROCH INTENSE 16M",
+    "U2 KC2 MP LS":"RENAULT/OROCH ICONIC 16 MT","F2 KC2 MP LS":"RENAULT/OROCH ICONIC 16 MT"
+  },
+  overrides: {},
+  reservas: {},
+  drive: { readUrl: "", scriptUrl: "https://script.google.com/macros/s/AKfycbx3LWOmSKc9mx3df84kaWCeIOJDfJ6y2-wyNn7qwuC1MCfe2O4dTPW2oVXfE_xjZX2k/exec" }
+};
+
+const LOJAS = ["Imbiribeira","Piedade","Afogados","Olinda","Epitácio","Iguatemi","Lauro"];
+const RESV_TO = ["cristhian.filho@grupovia1.com.br","ednita.pinto@eurovia.com.br","pedro.lins@eurovia.com.br"];
+
+const PRACA_COLORS = { "BAHIA":"#3dba74", "PARAÍBA":"#e8782f", "PERNAMBUCO":"#f5c518" };
+const FAM_COLORS = { "KWID":"#3dba74","E-KWID":"#9ad96b","DUSTER":"#e2553b","KOLEOS":"#3ba3d0","KARDIAN":"#8e63f0","BOREAL":"#d9822b","OROCH":"#2fc2b5","MASTER":"#b0b7bf" };
+const SPARE = ["#5aa9e6","#e65a9b","#c9b458","#7bc4a7","#b38df2","#e69a5a","#6fd0e0","#d1d66b"];
+const VIN_YEAR = {S:2025,T:2026,V:2027,W:2028,X:2029,Y:2030,1:2031,2:2032,3:2033,4:2034,5:2035};
+const KEY = "eurovia_faturar_v2";
+const CFG_REV = 2; // sobe quando novos cadastros padrão são incluídos no arquivo
+const PWD = "Y3Jpc3JubHQ=";
+
+/* ============ ESTADO ============ */
+let DB, VEH = [], unlocked = false, showVersions = true;
+const collapsed = new Set();
+const famOpen = new Set();
+
+const norm = s => String(s ?? "").trim().replace(/\s+/g," ").toUpperCase();
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const strip = n => norm(n).replace(/^RENAULT\s*\/\s*/,"");
+const clone = o => JSON.parse(JSON.stringify(o));
+function hashColor(s){let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))>>>0;return SPARE[h%SPARE.length];}
+const pracaColor = p => PRACA_COLORS[p] || (p.startsWith("SEM PRAÇA") ? "#ff9f43" : hashColor(p));
+const famColor = f => FAM_COLORS[f] || hashColor(f);
+function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`;}
+const fmtDate = iso => { if(!iso) return ""; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso); return m?`${m[3]}/${m[2]}/${m[1]}`:iso; };
+const fmtNow = d => d.toLocaleDateString("pt-BR")+" "+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+
+function fromEmbed(){
+  return EMBED_ROWS.map(r=>({chassi:r[0],conta:r[1],versao:r[2],estof:r[3],opcoes:r[4],cor:r[5],madc:r[6],modelo:r[7]}));
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){
+      const d = JSON.parse(raw);
+      if(d && d.cfg && Array.isArray(d.rows)){
+        d.cfg = Object.assign(clone(DEFAULT_CFG), d.cfg);
+        if(!d.cfg.reservas) d.cfg.reservas = {};
+        if(!d.cfg.drive) d.cfg.drive = { readUrl:"", scriptUrl:"" };
+        if(!d.cfg.drive.scriptUrl) d.cfg.drive.scriptUrl = DEFAULT_CFG.drive.scriptUrl;
+        if((d.cfgRev||1) < CFG_REV){
+          for(const dict of ["contas","cores","versoes"])
+            for(const [k,v] of Object.entries(DEFAULT_CFG[dict])) if(!(k in d.cfg[dict])) d.cfg[dict][k]=v;
+          d.cfgRev = CFG_REV;
+          try{ localStorage.setItem(KEY, JSON.stringify(d)); }catch(e){}
+        }
+        DB = d; return;
+      }
+    }
+  }catch(e){}
+  DB = { cfg: clone(DEFAULT_CFG), cfgRev: CFG_REV, rows: fromEmbed(), meta:{file:EMBED_FILE, at:null} };
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(DB)); }
+  catch(e){ toast("Não foi possível salvar no navegador — use Exportar configurações"); }
+}
+
+/* ============ RESOLUÇÃO DOS DADOS ============ */
+function resolve(r){
+  const c = DB.cfg, ov = c.overrides[r.chassi] || {};
+  const kConta = norm(r.conta), kVer = norm(r.versao), kCor = norm(r.cor);
+  const mPraca = Object.prototype.hasOwnProperty.call(c.contas,kConta) ? c.contas[kConta] : null;
+  const mVer = c.versoes[kVer] || null, mCor = c.cores[kCor] || null;
+  const modelo = ov.modelo || (mVer ? strip(mVer) : "");
+  const familia = ov.familia || norm(r.modelo) || (modelo ? modelo.split(" ")[0] : "SEM FAMÍLIA");
+  const y = VIN_YEAR[(r.chassi||"")[9]];
+  return {
+    ...r,
+    praca: ov.praca || mPraca || `SEM PRAÇA (${kConta||"em branco"})`,
+    familia, modelo,
+    corNome: ov.cor || mCor || "",
+    ano: ov.ano || (y ? `${y-1}/${y}` : ""),
+    madcF: ov.madc || r.madc || "",
+    fConta: !mPraca && !ov.praca, fVer: !mVer && !ov.modelo, fCor: !mCor && !ov.cor,
+    ajustado: !!c.overrides[r.chassi],
+    reserva: c.reservas[r.chassi] || null
+  };
+}
+function rebuild(){ VEH = DB.rows.map(resolve); }
+
+function pracaOrder(list){
+  return [...new Set(list)].sort((a,b)=>{
+    const sa=a.startsWith("SEM PRAÇA"), sb=b.startsWith("SEM PRAÇA");
+    if(sa!==sb) return sa?1:-1; return a.localeCompare(b,"pt-BR");
+  });
+}
+function pendencias(){
+  const map = new Map();
+  for(const v of VEH){
+    if(v.fConta) add("contas","Conta",norm(v.conta));
+    if(v.fVer) add("versoes","Versão",norm(v.versao));
+    if(v.fCor) add("cores","Cor",norm(v.cor));
+  }
+  function add(dict,tipo,code){const k=dict+"|"+code;const o=map.get(k)||{dict,tipo,code,n:0};o.n++;map.set(k,o);}
+  return [...map.values()].sort((a,b)=>b.n-a.n);
+}
+function lev(a,b){
+  const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+  let p=Array.from({length:n+1},(_,i)=>i);
+  for(let i=1;i<=m;i++){const q=[i];for(let j=1;j<=n;j++)q[j]=Math.min(p[j]+1,q[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=q;}
+  return p[n];
+}
+function suggest(dict,code){
+  if(dict==="contas") return null;
+  let best=null,bd=99;
+  for(const k of Object.keys(DB.cfg[dict])){const d=lev(code,k);if(d<bd){bd=d;best=k;}}
+  return (best && bd<=2) ? {from:best, value:DB.cfg[dict][best]} : null;
+}
+
+/* ============ TOTAL ============ */
+function fillFilters(){
+  const set = (id,label,vals) => {
+    const el=document.getElementById(id), cur=el.value;
+    el.innerHTML = `<option value="">${label}</option>` + vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
+    if(vals.includes(cur)) el.value=cur;
+  };
+  set("fPraca","Todas as praças",pracaOrder(VEH.map(v=>v.praca)));
+  set("fFam","Todas as famílias",[...new Set(VEH.map(v=>v.familia))].sort());
+  set("fCor","Todas as cores",[...new Set(VEH.map(v=>v.corNome||norm(v.cor)))].sort());
+}
+function filtered(){
+  const q=norm(document.getElementById("fQ").value), p=fPraca.value, f=fFam.value, c=fCor.value;
+  return VEH.filter(v=>{
+    if(p && v.praca!==p) return false;
+    if(f && v.familia!==f) return false;
+    if(c && (v.corNome||norm(v.cor))!==c) return false;
+    const st=document.getElementById("fStatus").value;
+    if(st==="resv" && !v.reserva) return false;
+    if(st==="disp" && v.reserva) return false;
+    if(q){ const hay=[v.chassi,v.modelo,v.versao,v.opcoes,v.familia,v.corNome,v.cor,v.praca].join(" ").toUpperCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+}
+function sortVeh(list){
+  const ord = pracaOrder(list.map(v=>v.praca));
+  return [...list].sort((a,b)=> ord.indexOf(a.praca)-ord.indexOf(b.praca)
+    || a.familia.localeCompare(b.familia) || (a.modelo||a.versao).localeCompare(b.modelo||b.versao)
+    || (a.corNome||a.cor).localeCompare(b.corNome||b.cor) || a.chassi.localeCompare(b.chassi));
+}
+function renderTotal(){
+  const list = sortVeh(filtered());
+  const tb = document.getElementById("tbTotal");
+  document.getElementById("count").innerHTML = `<b>${list.length}</b> veículo${list.length===1?"":"s"}`;
+  if(!VEH.length){ tb.innerHTML = `<tr><td colspan="9" class="empty">Nenhuma planilha importada ainda. Abra a aba AJUSTES e importe o relatório de veículos.</td></tr>`; return; }
+  if(!list.length){ tb.innerHTML = `<tr><td colspan="9" class="empty">Nenhum veículo com esses filtros. Limpe a busca ou troque a praça.</td></tr>`; return; }
+  const groups = [];
+  for(const v of list){ let g=groups[groups.length-1]; if(!g||g.praca!==v.praca){g={praca:v.praca,rows:[]};groups.push(g);} g.rows.push(v); }
+  let h="";
+  for(const g of groups){
+    const col = pracaColor(g.praca), isC = collapsed.has(g.praca);
+    if(!isC){
+      const runs=[]; for(const v of g.rows){let r=runs[runs.length-1];if(!r||r.fam!==v.familia){r={fam:v.familia,n:0};runs.push(r);}r.n++;}
+      let ri=0, left=0;
+      g.rows.forEach((v,i)=>{
+        h += `<tr${v.reserva?' class="isresv"':""}>`;
+        if(i===0) h += `<td class="span praca" rowspan="${g.rows.length}" style="color:${col}"><div class="stk">${esc(g.praca)}</div></td>`;
+        if(left===0){ const r=runs[ri++]; left=r.n; h += `<td class="span fam" rowspan="${r.n}" style="color:${famColor(r.fam)}"><div class="stk">${esc(r.fam)}</div></td>`; }
+        left--;
+        h += `<td class="mono muted">${esc(v.versao)}</td>`;
+        h += `<td>${v.modelo?esc(v.modelo):`<span class="flag">${esc(v.versao)}</span>`}${v.ajustado?' <span title="Veículo com ajuste manual" style="color:var(--yellow)">✎</span>':""}</td>`;
+        h += `<td class="cor">${v.corNome?esc(v.corNome):`<span class="flag">${esc(v.cor||"—")}</span>`}</td>`;
+        h += `<td class="mono">${esc(v.chassi)}</td>`;
+        h += `<td class="mono muted">${esc(v.opcoes)}</td>`;
+        h += `<td class="c">${v.madcF?fmtDate(v.madcF):'<span style="color:var(--dim)">—</span>'}</td>`;
+        h += `<td class="c">${statusCell(v)}</td>`;
+        h += "</tr>";
+      });
+    }
+    h += `<tr class="tot" data-praca="${esc(g.praca)}"><td colspan="9" style="color:${col}">${isC?"▸":"▾"} TOTAL ${esc(g.praca)} · ${g.rows.length} veículo${g.rows.length===1?"":"s"}</td></tr>`;
+  }
+  tb.innerHTML = h;
+  document.getElementById("btnExpand").textContent = collapsed.size ? "Expandir praças" : "Recolher praças";
+}
+function statusCell(v){
+  if(v.reserva){
+    const r=v.reserva, tip=`Reservado · ${r.vendedor||"—"} · ${r.loja||"—"} · Cliente: ${r.cliente||"—"}`;
+    return `<span class="pill resv" title="${esc(tip)}"><span class="dot"></span>Reservado</span>`;
+  }
+  return `<span class="pill disp"><span class="dot"></span>Disponível</span> <button class="resbtn" data-req="${esc(v.chassi)}">Solicitar</button>`;
+}
+function mailReserva({chassi,praca,familia,modelo,versao,cor,madc,loja,vendedor,cliente}){
+  const linhas=[
+    "Solicito reserva do veículo abaixo:","",
+    "Cliente: "+cliente,
+    "Loja: "+loja,
+    "Vendedor: "+vendedor,"",
+    "Modelo: "+(modelo||versao),
+    "Versão: "+versao,
+    "Cor: "+cor,
+    "Chassi: "+chassi,
+    "Praça: "+praca,
+    "Prev. faturamento: "+(madc||"—"),
+  ];
+  const su=encodeURIComponent(`Reserva - ${modelo||versao} - ${chassi}`);
+  const bo=encodeURIComponent(linhas.join("\n"));
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(RESV_TO.join(","))}&su=${su}&body=${bo}`;
+}
+function openReqModal(chassi){
+  const v=VEH.find(x=>x.chassi===chassi); if(!v) return;
+  mTitle.textContent="Solicitar reserva";
+  mSub.textContent="Preencha os dados; será aberto um e-mail no Gmail para você conferir e enviar.";
+  mVeh.innerHTML=`<b>${esc(v.modelo||v.versao)}</b> · ${esc(v.corNome||v.cor||"—")}<br><span class="mono">${esc(v.chassi)}</span> · ${esc(v.praca)}${v.madcF?` · prev. ${fmtDate(v.madcF)}`:""}`;
+  mBody.innerHTML=`
+    <label for="mLoja">Loja</label>
+    <select class="fld" id="mLoja">${LOJAS.map(l=>`<option>${esc(l)}</option>`).join("")}</select>
+    <label for="mVend">Vendedor</label>
+    <input class="fld" id="mVend" placeholder="Seu nome">
+    <label for="mCli">Nome do cliente</label>
+    <input class="fld" id="mCli" placeholder="Cliente da reserva">`;
+  mErr.textContent="";
+  mOk.textContent="Abrir e-mail no Gmail";
+  mOk.onclick=()=>{
+    const loja=mLoja.value, vendedor=mVend.value.trim(), cliente=mCli.value.trim();
+    if(!vendedor||!cliente){ mErr.textContent="Preencha vendedor e cliente."; return; }
+    const url=mailReserva({chassi:v.chassi,praca:v.praca,familia:v.familia,modelo:v.modelo,versao:v.versao,cor:v.corNome||v.cor,madc:fmtDate(v.madcF),loja,vendedor,cliente});
+    window.open(url,"_blank","noopener");
+    closeModal(); toast("E-mail de reserva aberto no Gmail");
+  };
+  modal.classList.add("on"); setTimeout(()=>mVend.focus(),30);
+}
+function closeModal(){ modal.classList.remove("on"); mOk.onclick=null; }
+
+function exportExcel(){
+  if(!window.XLSX){ toast("Biblioteca de Excel não carregou — verifique a internet"); return; }
+  const rows = sortVeh(filtered()).map(v=>({
+    "Praça":v.praca,"Família":v.familia,"Versão":v.versao,"Modelo":v.modelo||v.versao,
+    "Cor":v.corNome||v.cor,"Cód. cor":v.cor,"Chassi":v.chassi,"Opções":v.opcoes,
+    "Prev. MADC":fmtDate(v.madcF),"Status":v.reserva?"RESERVADO":"Disponível",
+    "Reservado p/ cliente":v.reserva?v.reserva.cliente:"","Loja":v.reserva?v.reserva.loja:"","Vendedor":v.reserva?v.reserva.vendedor:"",
+    "Conta destinatária":v.conta
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows), wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "A faturar");
+  XLSX.writeFile(wb, `a_faturar_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+/* ============ RESUMO ============ */
+function renderResumo(){
+  const rz = document.getElementById("v-resumo");
+  let em = document.getElementById("resEmpty");
+  if(!em){ em=document.createElement("div"); em.id="resEmpty"; em.className="empty"; em.textContent="Nenhuma planilha importada ainda. Abra a aba AJUSTES e importe o relatório de veículos."; rz.prepend(em); }
+  em.hidden = VEH.length>0; rz.querySelector(".strip").hidden = rz.querySelector(".rgrid").hidden = !VEH.length;
+  if(!VEH.length) return;
+  const pr = pracaOrder(VEH.map(v=>v.praca)), tot = VEH.length;
+  const by = (keyFn) => { const m=new Map(); for(const v of VEH){const k=keyFn(v);if(!m.has(k))m.set(k,{});const o=m.get(k);o[v.praca]=(o[v.praca]||0)+1;o.__t=(o.__t||0)+1;} return m; };
+  const cntP = {}; VEH.forEach(v=>cntP[v.praca]=(cntP[v.praca]||0)+1);
+  const resv = VEH.filter(v=>v.reserva).length, disp=tot-resv;
+  let s = `<div class="cell" style="--c:#e7e8ea"><div class="lb">TOTAL A FATURAR</div><div class="n">${tot}</div><div class="s">${pr.length} praça${pr.length===1?"":"s"}</div><div class="bar2"><i style="width:100%"></i></div></div>`;
+  s += `<div class="cell" style="--c:#4fd38a"><div class="lb">DISPONÍVEIS</div><div class="n">${disp}</div><div class="s">${tot?Math.round(disp/tot*100):0}% do total</div><div class="bar2"><i style="width:${tot?disp/tot*100:0}%"></i></div></div>`;
+  s += `<div class="cell" style="--c:#ff8585"><div class="lb">RESERVADOS</div><div class="n">${resv}</div><div class="s">${tot?Math.round(resv/tot*100):0}% do total</div><div class="bar2"><i style="width:${tot?resv/tot*100:0}%"></i></div></div>`;
+  for(const p of pr){ const n=cntP[p], rp=VEH.filter(v=>v.praca===p&&v.reserva).length, pc=tot?Math.round(n/tot*100):0;
+    s += `<div class="cell" style="--c:${pracaColor(p)}"><div class="lb">${esc(p)}</div><div class="n">${n}</div><div class="s">${pc}% · ${rp} reservado${rp===1?"":"s"}</div><div class="bar2"><i style="width:${pc}%"></i></div></div>`; }
+  document.getElementById("strip").innerHTML = s;
+
+  const famM = by(v=>v.familia), verM = by(v=>v.familia+"||"+(v.modelo||("⚠ "+v.versao)));
+  const colMax = m => Object.fromEntries(pr.map(p=>[p,Math.max(1,...[...m.values()].map(o=>o[p]||0))]));
+  const heat = (n,p,mx) => n ? `<td style="background:${rgba(pracaColor(p), 0.06 + 0.44*n/mx[p])}">${n}</td>` : `<td class="z">–</td>`;
+  const mxV = colMax(verM);
+  const cell = (n,p) => heat(n,p,mxV);
+  const head = `<tr><th>MODELO</th>${pr.map(p=>`<th>${esc(p)}</th>`).join("")}<th>TOTAL</th></tr>`;
+  let h = head;
+  const fams = [...famM.entries()].sort((a,b)=>b[1].__t-a[1].__t);
+  for(const [f,o] of fams){
+    const open = showVersions ? !famOpen.has("x:"+f) : famOpen.has(f);
+    h += `<tr class="famrow" data-fam="${esc(f)}"><td style="color:${famColor(f)}"><span class="caret">${open?"▾":"▸"}</span>${esc(f)}</td>${pr.map(p=>o[p]?`<td>${o[p]}</td>`:`<td class="z">–</td>`).join("")}<td class="t">${o.__t}</td></tr>`;
+    if(open){
+      const vers=[...verM.entries()].filter(([k])=>k.startsWith(f+"||")).sort((a,b)=>b[1].__t-a[1].__t);
+      for(const [k,vo] of vers){ h += `<tr class="ver"><td>${esc(k.split("||")[1])}</td>${pr.map(p=>cell(vo[p]||0,p)).join("")}<td class="t">${vo.__t}</td></tr>`; }
+    }
+  }
+  h += `<tr class="gt"><td>TOTAL</td>${pr.map(p=>`<td>${cntP[p]}</td>`).join("")}<td class="t">${tot}</td></tr>`;
+  document.getElementById("mxModelo").innerHTML = h;
+
+  const corM = by(v=>(v.corNome||"⚠ SEM CADASTRO")+"||"+norm(v.cor));
+  const mxC = colMax(corM);
+  let c = `<tr><th>COR</th>${pr.map(p=>`<th>${esc(p)}</th>`).join("")}<th>TOTAL</th></tr>`;
+  for(const [k,o] of [...corM.entries()].sort((a,b)=>b[1].__t-a[1].__t)){
+    const [nome,code]=k.split("||");
+    c += `<tr class="ver"><td style="padding-left:12px">${esc(nome)}<span class="code">${esc(code)}</span></td>${pr.map(p=>heat(o[p]||0,p,mxC)).join("")}<td class="t">${o.__t}</td></tr>`;
+  }
+  c += `<tr class="gt"><td>TOTAL</td>${pr.map(p=>`<td>${cntP[p]}</td>`).join("")}<td class="t">${tot}</td></tr>`;
+  document.getElementById("mxCor").innerHTML = c;
+  document.getElementById("btnVer").textContent = showVersions ? "Recolher versões" : "Mostrar versões";
+}
+
+/* ============ AJUSTES ============ */
+function datalists(){
+  const opts = a => [...new Set(a)].filter(Boolean).sort().map(v=>`<option value="${esc(v)}">`).join("");
+  dlPraca.innerHTML = opts([...Object.values(DB.cfg.contas), ...VEH.map(v=>v.praca).filter(p=>!p.startsWith("SEM PRAÇA"))]);
+  dlCor.innerHTML = opts(Object.values(DB.cfg.cores));
+  dlModelo.innerHTML = opts(Object.values(DB.cfg.versoes).map(strip));
+  dlFam.innerHTML = opts(VEH.map(v=>v.familia));
+  dlChassi.innerHTML = opts(DB.rows.map(r=>r.chassi));
+}
+function cadTable(dict,title,colA,colB,list){
+  const entries = Object.entries(DB.cfg[dict]).sort((a,b)=>a[0].localeCompare(b[0]));
+  return `<div class="cad" data-cad="${dict}">
+    <h4>${title} <small>${entries.length} cadastrados</small></h4>
+    <div class="add"><input class="fld" placeholder="${colA}" data-add-k><input class="fld" placeholder="${colB}" data-add-v list="${list}"><button class="btn sm" data-act="add" data-dict="${dict}">Adicionar</button></div>
+    ${entries.length>8?`<input class="fld filter" type="search" placeholder="Filtrar ${title.toLowerCase()}…" data-filter="${dict}">`:""}
+    <div class="scroll"><table class="ed"><thead><tr><th style="width:38%">${colA.toUpperCase()}</th><th>${colB.toUpperCase()}</th><th></th></tr></thead><tbody>
+    ${entries.map(([k,v])=>`<tr data-k="${esc(k)}"><td class="mono">${k===""?'<span style="color:var(--muted);font-family:var(--sans)">(em branco)</span>':esc(k)}</td>
+      <td><input class="fld" value="${esc(v)}" data-edit="${dict}" data-key="${esc(k)}" list="${list}"></td>
+      <td>${k===""?"":`<button class="x" title="Excluir ${esc(k)}" data-act="del" data-dict="${dict}" data-key="${esc(k)}">×</button>`}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+}
+function renderAjustes(){
+  if(!unlocked) return;
+  datalists();
+  const pend = pendencias();
+  const ovs = Object.entries(DB.cfg.overrides);
+  const resvs = Object.entries(DB.cfg.reservas);
+  const at = DB.meta.at ? fmtNow(new Date(DB.meta.at)) : "nenhuma importação";
+  let h = `
+  <div class="box">
+    <div class="rowflex"><h3 style="margin-right:auto">Planilha</h3><button class="btn sm" id="btnLock">Bloquear ajustes</button></div>
+    <p class="help">Importe o relatório de veículos (.xlsx). As colunas são localizadas pelo nome do cabeçalho — N° chassis, Conta destinatária, Versão, Opções, Cor, Data MADC Previsional e Modelo — então pode mandar o relatório completo ou já enxugado. A importação substitui a lista atual; cadastros e ajustes por chassi continuam valendo.</p>
+    <div class="drop" id="drop"><b>Clique para escolher</b> ou arraste a planilha aqui</div>
+    <div class="info">Em uso: <b>${esc(DB.meta.file||"—")}</b> · ${DB.rows.length} veículos · ${esc(at)}</div>
+    <div class="info" id="impMsg"></div>
+  </div>`;
+  if(pend.length){
+    h += `<div class="box warn"><h3>Códigos sem cadastro</h3>
+    <p class="help">Estes códigos vieram na planilha e ainda não têm destino. Quando há um código parecido já cadastrado, o campo vem preenchido com a sugestão — confira antes de salvar.</p>
+    <table class="ed"><thead><tr><th>TIPO</th><th>CÓDIGO</th><th style="text-align:center">VEÍCULOS</th><th style="width:45%">DESTINAR COMO</th><th></th></tr></thead><tbody>
+    ${pend.map(p=>{const sg=suggest(p.dict,p.code);const list=p.dict==="contas"?"dlPraca":p.dict==="cores"?"dlCor":"dlModelo";
+      const val = sg ? (p.dict==="versoes"?sg.value:sg.value) : "";
+      return `<tr><td>${p.tipo}</td><td class="mono">${p.code?esc(p.code):"(em branco)"}</td><td style="text-align:center">${p.n}</td>
+      <td><input class="fld" value="${esc(val)}" list="${list}" data-pend="${p.dict}" data-key="${esc(p.code)}" placeholder="${p.dict==="contas"?"Ex.: PERNAMBUCO":p.dict==="cores"?"Ex.: PRETO NACRE":"Ex.: RENAULT/KARDIAN TECHNO AT"}">
+      ${sg?`<div class="sug">Sugestão pelo código parecido ${esc(sg.from)}</div>`:""}</td>
+      <td><button class="btn sm pri" data-act="pend" data-dict="${p.dict}" data-key="${esc(p.code)}">Salvar</button></td></tr>`;}).join("")}
+    </tbody></table></div>`;
+  }
+  h += `<div class="box"><h3>Cadastros</h3>
+    <p class="help">Edite o nome direto no campo (salva ao sair do campo). Para trocar um código, exclua e adicione de novo.</p>
+    <div class="cads">${cadTable("contas","Contas","Código da conta","Praça","dlPraca")}${cadTable("cores","Cores","Código da cor","Nome da cor","dlCor")}${cadTable("versoes","Versões","Código da versão","Nome do modelo","dlModelo")}</div>
+  </div>
+  <div class="box"><h3>Ajustar um veículo</h3>
+    <p class="help">Corrige um chassi específico sem mexer nos cadastros. Deixe em branco o que não quiser alterar.</p>
+    <div class="rowflex"><input class="fld mono" id="vChassi" list="dlChassi" placeholder="Digite ou cole o chassi" style="min-width:280px"><button class="btn" id="btnFind">Buscar</button></div>
+    <div id="vForm"></div>
+    ${ovs.length?`<h4 style="margin:20px 0 8px">Veículos ajustados (${ovs.length})</h4><table class="ed"><thead><tr><th>CHASSI</th><th>AJUSTES</th><th></th></tr></thead><tbody>
+      ${ovs.map(([k,o])=>`<tr><td class="mono">${esc(k)}</td><td>${Object.entries(o).map(([f,v])=>`${esc(f)}: <b>${esc(f==="madc"?fmtDate(v):v)}</b>`).join(" · ")}</td><td style="white-space:nowrap"><button class="btn sm" data-act="editov" data-key="${esc(k)}">Editar</button> <button class="x" title="Remover ajuste" data-act="delov" data-key="${esc(k)}">×</button></td></tr>`).join("")}
+    </tbody></table>`:""}
+  </div>
+  <div class="box"><h3>Reservas</h3>
+    <p class="help">Marque um chassi como reservado para que vendedores e gerentes vejam o selo Reservado e os dados ao passar o mouse. O status vale para quem receber o arquivo depois desta marcação.</p>
+    <div class="rowflex"><input class="fld mono" id="rChassi" list="dlChassi" placeholder="Digite ou cole o chassi" style="min-width:280px"><button class="btn" id="btnFindRes">Buscar</button></div>
+    <div id="rForm"></div>
+    ${resvs.length?`<h4 style="margin:20px 0 8px">Veículos reservados (${resvs.length})</h4><table class="ed"><thead><tr><th>CHASSI</th><th>CLIENTE</th><th>LOJA</th><th>VENDEDOR</th><th>DESDE</th><th></th></tr></thead><tbody>
+      ${resvs.map(([k,o])=>`<tr><td class="mono">${esc(k)}</td><td>${esc(o.cliente||"—")}</td><td>${esc(o.loja||"—")}</td><td>${esc(o.vendedor||"—")}</td><td class="muted">${o.at?esc(fmtNow(new Date(o.at))):"—"}</td><td style="white-space:nowrap"><button class="btn sm" data-act="editres" data-key="${esc(k)}">Editar</button> <button class="x" title="Liberar reserva" data-act="delres" data-key="${esc(k)}">×</button></td></tr>`).join("")}
+    </tbody></table>`:""}
+  </div>
+  <div class="box"><h3>Backup no Drive</h3>
+    <p class="help">Configure uma vez e todos que abrirem o painel recebem sua última versão automaticamente. O envio usa o Apps Script (arquivo AppsScript_Backup_Faturar.gs); a leitura pode usar o mesmo script ou um link direto do arquivo no Drive compartilhado como "qualquer pessoa com o link".</p>
+    <div class="vform">
+      <div><label for="drvScript">URL do Apps Script (/exec) — envio e leitura</label><input class="fld mono" id="drvScript" value="${esc(DB.cfg.drive.scriptUrl||"")}" placeholder="https://script.google.com/macros/s/…/exec"></div>
+      <div><label for="drvRead">Link do backup no Drive — só leitura (opcional)</label><input class="fld mono" id="drvRead" value="${esc(DB.cfg.drive.readUrl||"")}" placeholder="https://drive.google.com/file/d/…/view"></div>
+    </div>
+    <div class="rowflex" style="margin-top:14px">
+      <button class="btn pri" id="btnDrivePush">Enviar backup ao Drive</button>
+      <button class="btn" id="btnDrivePull">Atualizar agora do Drive</button>
+      <button class="btn sm" id="btnDriveUseScript">Usar o script também para ler</button>
+    </div>
+    <div class="info" id="drvMsg">${DB.cfg.drive.scriptUrl||DB.cfg.drive.readUrl ? "Configurado. O painel busca sozinho ao abrir e pelo botão Atualizar no topo." : "Ainda não configurado — o botão Atualizar fica oculto até você salvar um link aqui."}</div>
+  </div>
+  <div class="box"><h3>Backup manual</h3>
+    <p class="help">Os dados ficam salvos neste navegador. Exporte um backup para levar os cadastros para outro computador ou para não perdê-los se o histórico for limpo.</p>
+    <div class="rowflex"><button class="btn" id="btnCfgExp">Exportar configurações</button><button class="btn" id="btnCfgImp">Importar configurações</button><button class="btn danger" id="btnReset">Apagar tudo e voltar ao início</button></div>
+  </div>`;
+  const adj = document.getElementById("adj"); adj.innerHTML = h;
+  wireAjustes();
+}
+function vehicleForm(chassi){
+  const r = DB.rows.find(x=>x.chassi===chassi), box=document.getElementById("vForm");
+  if(!r){ box.innerHTML = `<p class="info">Chassi não encontrado na planilha atual.</p>`; return; }
+  const o = DB.cfg.overrides[chassi]||{};
+  const saved=DB.cfg.overrides[chassi]; delete DB.cfg.overrides[chassi]; const orig=resolve(r); if(saved) DB.cfg.overrides[chassi]=saved;
+  const f = (id,label,val,ph,list,type="text") => `<div><label for="${id}">${label}</label><input class="fld" id="${id}" type="${type}" value="${esc(val||"")}" placeholder="${esc(ph)}" ${list?`list="${list}"`:""}><div class="orig">Lido: ${esc(type==="date"?fmtDate(ph)||"—":ph||"—")}</div></div>`;
+  box.innerHTML = `<div class="vform">
+    ${f("oPraca","Praça",o.praca,orig.praca,"dlPraca")}
+    ${f("oFam","Família",o.familia,orig.familia,"dlFam")}
+    ${f("oModelo","Modelo",o.modelo,orig.modelo||r.versao,"dlModelo")}
+    ${f("oCor","Cor",o.cor,orig.corNome||r.cor,"dlCor")}
+    ${f("oAno","Ano",o.ano,orig.ano)}
+    ${f("oMadc","Prev. MADC",o.madc,orig.madcF,null,"date")}
+  </div>
+  <div class="rowflex" style="margin-top:14px"><button class="btn pri" data-act="saveov" data-key="${esc(chassi)}">Salvar ajuste</button>${DB.cfg.overrides[chassi]?`<button class="btn danger" data-act="delov" data-key="${esc(chassi)}">Remover ajuste</button>`:""}</div>`;
+}
+function reserveForm(chassi){
+  const r = DB.rows.find(x=>x.chassi===chassi), box=document.getElementById("rForm");
+  if(!r){ box.innerHTML = `<p class="info">Chassi não encontrado na planilha atual.</p>`; return; }
+  const v = resolve(r), o = DB.cfg.reservas[chassi]||{};
+  box.innerHTML = `<div class="veh" style="margin-top:12px"><b>${esc(v.modelo||v.versao)}</b> · ${esc(v.corNome||v.cor||"—")} · <span class="mono">${esc(chassi)}</span> · ${esc(v.praca)}</div>
+  <div class="vform">
+    <div><label for="rLoja">Loja</label><select class="fld" id="rLoja">${LOJAS.map(l=>`<option ${o.loja===l?"selected":""}>${esc(l)}</option>`).join("")}</select></div>
+    <div><label for="rVend">Vendedor</label><input class="fld" id="rVend" value="${esc(o.vendedor||"")}" placeholder="Nome do vendedor"></div>
+    <div><label for="rCli">Cliente</label><input class="fld" id="rCli" value="${esc(o.cliente||"")}" placeholder="Nome do cliente"></div>
+  </div>
+  <div class="rowflex" style="margin-top:14px"><button class="btn pri" data-act="savers" data-key="${esc(chassi)}">${o.cliente?"Atualizar reserva":"Marcar como reservado"}</button>${DB.cfg.reservas[chassi]?`<button class="btn danger" data-act="delres" data-key="${esc(chassi)}">Liberar reserva</button>`:""}</div>`;
+}
+function wireAjustes(){
+  const adj = document.getElementById("adj");
+  document.getElementById("btnLock").onclick = ()=>{unlocked=false;adj.hidden=true;lock.hidden=false;pwd.value="";};
+  const drop = document.getElementById("drop");
+  drop.onclick = ()=>fileXlsx.click();
+  drop.ondragover = e=>{e.preventDefault();drop.classList.add("over");};
+  drop.ondragleave = ()=>drop.classList.remove("over");
+  drop.ondrop = e=>{e.preventDefault();drop.classList.remove("over");if(e.dataTransfer.files[0])importFile(e.dataTransfer.files[0]);};
+  document.getElementById("btnFind").onclick = ()=>vehicleForm(norm(vChassi.value));
+  vChassi.onkeydown = e=>{ if(e.key==="Enter") vehicleForm(norm(vChassi.value)); };
+  document.getElementById("btnFindRes").onclick = ()=>reserveForm(norm(rChassi.value));
+  rChassi.onkeydown = e=>{ if(e.key==="Enter") reserveForm(norm(rChassi.value)); };
+  const drvScript=document.getElementById("drvScript"), drvRead=document.getElementById("drvRead");
+  const saveDrive=()=>{ DB.cfg.drive.scriptUrl=drvScript.value.trim(); DB.cfg.drive.readUrl=drvRead.value.trim(); save(); updateSyncUI(); };
+  drvScript.onchange=saveDrive; drvRead.onchange=saveDrive;
+  document.getElementById("btnDrivePush").onclick=()=>{ saveDrive(); pushToDrive(); };
+  document.getElementById("btnDrivePull").onclick=()=>{ saveDrive(); pullFromDrive(); };
+  document.getElementById("btnDriveUseScript").onclick=()=>{ if(!drvScript.value.trim()){ toast("Preencha a URL do Apps Script primeiro"); return; } drvRead.value=""; saveDrive(); document.getElementById("drvMsg").textContent="A leitura vai usar o Apps Script."; toast("Leitura configurada pelo script"); };
+  document.getElementById("btnCfgExp").onclick = exportCfg;
+  document.getElementById("btnCfgImp").onclick = ()=>fileCfg.click();
+  document.getElementById("btnReset").onclick = ()=>{
+    if(!confirm("Apagar a planilha importada, os cadastros novos, as reservas e todos os ajustes deste navegador?")) return;
+    try{localStorage.removeItem(KEY);}catch(e){} load(); refresh(); toast("Dados restaurados ao início");
+  };
+  adj.querySelectorAll("[data-filter]").forEach(inp=>inp.oninput=()=>{
+    const q=norm(inp.value); inp.closest(".cad").querySelectorAll("tbody tr").forEach(tr=>{
+      const txt=(tr.dataset.k+" "+tr.querySelector("input").value).toUpperCase(); tr.style.display = txt.includes(q)?"":"none"; });
+  });
+  adj.querySelectorAll("[data-edit]").forEach(inp=>inp.onchange=()=>{
+    const v=norm(inp.value); if(!v){toast("O nome não pode ficar vazio");return;}
+    DB.cfg[inp.dataset.edit][inp.dataset.key]=v; inp.value=v; save(); refresh(false); toast("Cadastro atualizado");
+  });
+}
+document.getElementById("adj").addEventListener("click", e=>{
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  const {act,dict,key} = b.dataset;
+  if(act==="add"){
+    const wrap=b.closest(".add"), k=norm(wrap.querySelector("[data-add-k]").value), v=norm(wrap.querySelector("[data-add-v]").value);
+    if(!k||!v){toast("Preencha código e nome");return;}
+    const existed = Object.prototype.hasOwnProperty.call(DB.cfg[dict],k);
+    DB.cfg[dict][k]=v; save(); refresh(); toast(existed?`${k} atualizado`:`${k} cadastrado`);
+  }
+  if(act==="del"){ if(!confirm(`Excluir o código ${key}?`)) return; delete DB.cfg[dict][key]; save(); refresh(); toast(`${key} excluído`); }
+  if(act==="pend"){
+    const inp=b.closest("tr").querySelector("[data-pend]"), v=norm(inp.value);
+    if(!v){toast("Informe para onde destinar");inp.focus();return;}
+    DB.cfg[dict][key]=v; save(); refresh(); toast(`${key||"(em branco)"} destinado como ${v}`);
+  }
+  if(act==="saveov"){
+    const g=id=>norm(document.getElementById(id).value), o={};
+    if(g("oPraca"))o.praca=g("oPraca"); if(g("oFam"))o.familia=g("oFam"); if(g("oModelo"))o.modelo=g("oModelo");
+    if(g("oCor"))o.cor=g("oCor"); if(g("oAno"))o.ano=g("oAno"); if(document.getElementById("oMadc").value)o.madc=document.getElementById("oMadc").value;
+    if(Object.keys(o).length) DB.cfg.overrides[key]=o; else delete DB.cfg.overrides[key];
+    save(); refresh(); toast("Ajuste salvo"); vChassi.value=key; vehicleForm(key);
+  }
+  if(act==="delov"){ delete DB.cfg.overrides[key]; save(); refresh(); toast("Ajuste removido"); }
+  if(act==="savers"){
+    const loja=document.getElementById("rLoja").value, vendedor=document.getElementById("rVend").value.trim(), cliente=document.getElementById("rCli").value.trim();
+    if(!cliente||!vendedor){ toast("Informe vendedor e cliente"); return; }
+    const prev=DB.cfg.reservas[key];
+    DB.cfg.reservas[key]={cliente,loja,vendedor,at:prev&&prev.at?prev.at:Date.now()};
+    save(); refresh(); toast("Reserva salva"); rChassi.value=key; reserveForm(key);
+  }
+  if(act==="delres"){ if(!confirm(`Liberar a reserva do chassi ${key}?`)) return; delete DB.cfg.reservas[key]; save(); refresh(); toast("Reserva liberada"); if(document.getElementById("rChassi")) rChassi.value=key; if(document.getElementById("rForm")) reserveForm(key); }
+  if(act==="editres"){ rChassi.value=key; reserveForm(key); rChassi.scrollIntoView({block:"center"}); }
+  if(act==="editov"){ vChassi.value=key; vehicleForm(key); vChassi.scrollIntoView({block:"center"}); }
+});
+
+/* ============ IMPORTAÇÃO ============ */
+const normH = s => String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+function toISO(v){
+  if(v===""||v==null) return "";
+  if(typeof v==="number"){ const d=XLSX.SSF.parse_date_code(v); return d?`${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`:""; }
+  if(v instanceof Date) return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,"0")}-${String(v.getDate()).padStart(2,"0")}`;
+  const s=String(v).trim(); let m;
+  if((m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s))) return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  if((m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s))) return `${m[1]}-${m[2]}-${m[3]}`;
+  return "";
+}
+function parseSheet(buf){
+  const wb = XLSX.read(buf,{type:"array"});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const aoa = XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:""});
+  let hi=-1; for(let i=0;i<Math.min(20,aoa.length);i++){ if(aoa[i].some(c=>normH(c).includes("chassi"))){hi=i;break;} }
+  if(hi<0) throw new Error('Não encontrei a coluna "N° chassis" na primeira aba da planilha.');
+  const H = aoa[hi].map(normH), find = fn => H.findIndex(fn);
+  const ix = { chassi:find(h=>h.includes("chassi")), conta:find(h=>h.includes("destinat")), versao:find(h=>h==="versao"),
+    estof:find(h=>h.startsWith("estofamento")), opcoes:find(h=>h.startsWith("opco")), cor:find(h=>h==="cor"),
+    madc:find(h=>h.includes("madc")), modelo:find(h=>h==="modelo") };
+  const miss = ["versao","cor"].filter(k=>ix[k]<0);
+  if(miss.length) throw new Error("Faltam as colunas: "+miss.map(k=>({versao:"Versão",cor:"Cor"}[k])).join(", ")+".");
+  const get=(row,k)=>ix[k]<0?"":row[ix[k]];
+  const rows=[], seen=new Set();
+  for(let i=hi+1;i<aoa.length;i++){
+    const row=aoa[i], ch=norm(get(row,"chassi"));
+    if(!/^[A-HJ-NPR-Z0-9]{17}$/.test(ch) || seen.has(ch)) continue;
+    seen.add(ch);
+    rows.push({ chassi:ch, conta:norm(get(row,"conta")), versao:norm(get(row,"versao")), estof:norm(get(row,"estof")),
+      opcoes:norm(get(row,"opcoes")), cor:norm(get(row,"cor")), madc:toISO(get(row,"madc")), modelo:norm(get(row,"modelo")) });
+  }
+  return {rows, semConta: ix.conta<0};
+}
+function importFile(file){
+  const msg = () => document.getElementById("impMsg");
+  if(!window.XLSX){ msg().innerHTML = `<span style="color:var(--bad)">A biblioteca de leitura de Excel não carregou. Abra o painel com internet e tente de novo.</span>`; return; }
+  const rd = new FileReader();
+  rd.onload = () => {
+    try{
+      const {rows,semConta} = parseSheet(new Uint8Array(rd.result));
+      if(!rows.length) throw new Error("Nenhum chassi válido encontrado na planilha.");
+      DB.rows = rows; DB.meta = {file:file.name, at:Date.now()}; save(); refresh();
+      const p = pendencias().length;
+      msg().innerHTML = `<b style="color:var(--ok)">${rows.length} veículos importados de ${esc(file.name)}.</b>` +
+        (p?` <span style="color:var(--warn)">${p} código${p>1?"s":""} sem cadastro — destine abaixo.</span>`:"") +
+        (semConta?` <span style="color:var(--warn)">A coluna Conta destinatária não veio; todos foram tratados como conta em branco.</span>`:"");
+      toast("Planilha importada");
+    }catch(err){ msg().innerHTML = `<span style="color:var(--bad)">${esc(err.message)}</span>`; }
+  };
+  rd.readAsArrayBuffer(file);
+}
+fileXlsx.onchange = ()=>{ if(fileXlsx.files[0]) importFile(fileXlsx.files[0]); fileXlsx.value=""; };
+function exportCfg(){
+  const blob = new Blob([JSON.stringify({tipo:"eurovia_faturar_backup",versao:1,at:new Date().toISOString(),cfg:DB.cfg,rows:DB.rows,meta:DB.meta},null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`faturar_config_${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+fileCfg.onchange = ()=>{
+  const f=fileCfg.files[0]; fileCfg.value=""; if(!f) return;
+  f.text().then(t=>{ const d=JSON.parse(t); if(!d.cfg||!d.cfg.versoes) throw 0;
+    DB.cfg = Object.assign(clone(DEFAULT_CFG), d.cfg); save(); refresh(); toast("Configurações importadas");
+  }).catch(()=>toast("Arquivo de configurações inválido"));
+};
+
+/* ============ BACKUP NO DRIVE ============ */
+// Extrai o ID de um arquivo a partir de um link do Drive e monta a URL de download direto.
+function driveId(url){
+  if(!url) return "";
+  let m = url.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || url.match(/[?&]id=([a-zA-Z0-9_-]{20,})/)
+        || url.match(/\/file\/d\/([a-zA-Z0-9_-]{20,})/);
+  if(m) return m[1];
+  if(/^[a-zA-Z0-9_-]{20,}$/.test(url.trim())) return url.trim();
+  return "";
+}
+function syncNote(msg,cls){ const el=document.getElementById("syncNote"); el.textContent=msg||""; el.className="sync-note"+(cls?" "+cls:""); }
+function syncBtn(on){ const b=document.getElementById("btnSync"); if(b){ b.classList.toggle("loading",on); b.disabled=on; } }
+function updateSyncUI(){
+  const b=document.getElementById("btnSync");
+  const has = !!(DB.cfg.drive && (DB.cfg.drive.readUrl || DB.cfg.drive.scriptUrl));
+  if(b) b.hidden = !has;
+}
+// Baixa um JSON do Drive. Tenta primeiro o Apps Script (CORS liberado); se não houver, usa o link direto.
+function fetchBackup(){
+  const d = DB.cfg.drive || {};
+  if(d.scriptUrl){
+    return fetch(d.scriptUrl, {cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); });
+  }
+  const id = driveId(d.readUrl);
+  if(!id) return Promise.reject(new Error("Configure o link do backup na aba AJUSTES."));
+  const url = "https://drive.google.com/uc?export=download&id="+id;
+  return fetch(url, {cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); });
+}
+// Substitui TUDO pela versão do Drive (cadastros, reservas, ajustes e, se houver, a planilha).
+function applyBackup(data){
+  if(!data || data.vazio) throw new Error("O backup do Drive ainda está vazio.");
+  const cfg = data.cfg || (data.versoes ? data : null);
+  if(!cfg || !cfg.versoes) throw new Error("Arquivo de backup inválido.");
+  DB.cfg = Object.assign(clone(DEFAULT_CFG), cfg);
+  if(!DB.cfg.drive) DB.cfg.drive = { readUrl:"", scriptUrl:"" };
+  if(Array.isArray(data.rows)) DB.rows = data.rows;
+  if(data.meta) DB.meta = data.meta;
+  save();
+}
+function pullFromDrive(opts){
+  opts = opts || {};
+  const d = DB.cfg.drive || {};
+  if(!d.readUrl && !d.scriptUrl){ if(!opts.silent) toast("Nenhum link do Drive configurado"); return Promise.resolve(false); }
+  syncBtn(true); syncNote("Buscando no Drive…");
+  return fetchBackup().then(data=>{
+    const drvKeep = clone(DB.cfg.drive);     // preserva a configuração local do Drive
+    applyBackup(data);
+    DB.cfg.drive = drvKeep; save();
+    refresh(); updateSyncUI();
+    syncNote("Atualizado "+fmtNow(new Date()),"ok");
+    if(!opts.silent) toast("Dados atualizados a partir do Drive");
+    return true;
+  }).catch(err=>{
+    syncNote("Falha ao atualizar","err");
+    if(!opts.silent) toast("Não foi possível ler o Drive: "+err.message);
+    return false;
+  }).finally(()=>syncBtn(false));
+}
+function pushToDrive(){
+  const d = DB.cfg.drive || {};
+  if(!d.scriptUrl){ toast("Configure a URL do Apps Script para enviar"); return; }
+  const payload = JSON.stringify({ tipo:"eurovia_faturar_backup", versao:1, at:new Date().toISOString(), cfg:DB.cfg, rows:DB.rows, meta:DB.meta });
+  syncNote("Enviando ao Drive…");
+  const btn=document.getElementById("btnDrivePush"); if(btn){ btn.disabled=true; btn.dataset.lbl=btn.textContent; btn.textContent="Enviando…"; }
+  // text/plain evita o "preflight" de CORS no Apps Script
+  fetch(d.scriptUrl, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body:payload })
+    .then(r=>r.json().catch(()=>({ok:r.ok})))
+    .then(res=>{
+      if(res && res.ok===false) throw new Error(res.erro||"recusado");
+      syncNote("Backup enviado "+fmtNow(new Date()),"ok"); toast("Backup enviado ao Drive");
+    })
+    .catch(err=>{ syncNote("Falha ao enviar","err"); toast("Não foi possível enviar: "+err.message); })
+    .finally(()=>{ if(btn){ btn.disabled=false; btn.textContent=btn.dataset.lbl||"Enviar backup ao Drive"; } });
+}
+
+/* ============ GERAL ============ */
+function toast(t){ const el=document.getElementById("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove("show"),2400); }
+function renderMeta(){
+  const at = DB.meta.at ? "lida em "+fmtNow(new Date(DB.meta.at)) : "";
+  document.getElementById("meta").textContent = VEH.length||DB.meta.at
+    ? `Eurovia Renault · ${DB.meta.file||"—"} · ${VEH.length} veículos · ${at}`
+    : "Eurovia Renault · nenhuma planilha importada";
+  const p = pendencias(), n = p.reduce((s,x)=>s+x.n,0), b=document.getElementById("pendBadge");
+  b.classList.toggle("show", p.length>0);
+  b.textContent = `⚠ ${p.length} código${p.length===1?"":"s"} sem cadastro (${n} veículo${n===1?"":"s"})`;
+}
+function refresh(full=true){
+  rebuild(); fillFilters(); renderMeta(); renderTotal(); renderResumo();
+  if(typeof updateSyncUI==="function") updateSyncUI();
+  if(full) renderAjustes(); else datalists();
+}
+function showTab(t){
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected", b.dataset.tab===t));
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on", v.id==="v-"+t));
+  if(t==="ajustes" && !unlocked) setTimeout(()=>pwd.focus(),0);
+}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+document.getElementById("pendBadge").onclick = ()=>showTab("ajustes");
+["fQ","fPraca","fFam","fCor","fStatus"].forEach(id=>document.getElementById(id).addEventListener("input",renderTotal));
+document.getElementById("tbTotal").addEventListener("click",e=>{
+  const req=e.target.closest("[data-req]"); if(req){ openReqModal(req.dataset.req); return; }
+  const tr=e.target.closest("tr.tot"); if(!tr) return; const p=tr.dataset.praca;
+  collapsed.has(p)?collapsed.delete(p):collapsed.add(p); renderTotal();
+});
+mCancel.onclick = closeModal;
+modal.addEventListener("click", e=>{ if(e.target===modal) closeModal(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && modal.classList.contains("on")) closeModal(); });
+document.getElementById("btnExpand").onclick = ()=>{
+  if(collapsed.size) collapsed.clear(); else pracaOrder(VEH.map(v=>v.praca)).forEach(p=>collapsed.add(p));
+  renderTotal();
+};
+document.getElementById("btnExport").onclick = exportExcel;
+document.getElementById("btnVer").onclick = ()=>{ showVersions=!showVersions; famOpen.clear(); renderResumo(); };
+document.getElementById("mxModelo").addEventListener("click",e=>{
+  const tr=e.target.closest("tr.famrow"); if(!tr) return; const f=tr.dataset.fam, k=showVersions?"x:"+f:f;
+  famOpen.has(k)?famOpen.delete(k):famOpen.add(k); renderResumo();
+});
+function login(){
+  let ok=false; try{ ok = btoa(unescape(encodeURIComponent(pwd.value))) === PWD; }catch(e){}
+  if(!ok){ pwdErr.textContent="Senha incorreta."; pwd.select(); return; }
+  pwdErr.textContent=""; unlocked=true; lock.hidden=true; document.getElementById("adj").hidden=false; renderAjustes();
+}
+btnLogin.onclick = login;
+pwd.onkeydown = e=>{ if(e.key==="Enter") login(); };
+document.getElementById("btnSync").onclick = ()=>pullFromDrive();
+
+load(); refresh();
+// Busca automática da última versão ao abrir (silenciosa; se falhar, mantém o que está salvo localmente)
+if(DB.cfg.drive && (DB.cfg.drive.scriptUrl || DB.cfg.drive.readUrl)){
+  pullFromDrive({silent:true});
+}
+</script>
+</body>
+</html>
