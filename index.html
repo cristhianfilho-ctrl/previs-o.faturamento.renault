@@ -76,6 +76,15 @@ button,input,select{font-family:inherit;font-size:inherit;color:inherit}
 .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .bar input[type=search],.bar select,.fld{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:7px 10px;min-width:150px}
 .bar input[type=search]{min-width:260px}
+.chips{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.chips .lbl{font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--muted);margin-right:2px}
+.pchip{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--c,var(--line));border-radius:3px;padding:7px 14px;font-weight:700;letter-spacing:.3px;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.pchip .ct{font-size:12px;color:var(--muted);font-weight:600}
+.pchip[aria-pressed="true"]{background:var(--c,var(--yellow));border-color:var(--c,var(--yellow));color:#16181a}
+.pchip[aria-pressed="true"] .ct{color:rgba(0,0,0,.6)}
+.pchip:hover:not([aria-pressed="true"]){border-color:var(--c,var(--yellow))}
+.pchip.all{border-left-color:var(--yellow)}
+.pchip.all[aria-pressed="true"]{background:var(--yellow);border-color:var(--yellow)}
 .bar .count{margin-left:auto;color:var(--muted)}
 .bar .count b{color:var(--text);font-size:17px}
 .btn{background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:7px 14px;cursor:pointer;font-weight:600}
@@ -83,6 +92,7 @@ button,input,select{font-family:inherit;font-size:inherit;color:inherit}
 .btn.pri{background:var(--yellow);color:var(--ink);border-color:var(--yellow)}
 .btn.danger{border-color:#5a2b2b;color:#ff8a8a}
 .btn.sm{padding:4px 10px;font-size:13px}
+.btn[aria-pressed="true"]{background:var(--yellow);color:var(--ink);border-color:var(--yellow)}
 
 /* tabela TOTAL (estilo da referência) */
 .tablewrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 240px);border:1px solid var(--line);border-radius:3px}
@@ -245,14 +255,13 @@ table.ed{border-collapse:collapse;width:100%}
 
 <!-- TOTAL -->
 <section class="view on" id="v-total">
+  <div class="chips" id="chipsPraca" role="group" aria-label="Filtrar por praça"></div>
   <div class="bar">
     <input type="search" id="fQ" placeholder="Buscar chassi, modelo, opção…">
-    <select id="fPraca"></select>
     <select id="fFam"></select>
     <select id="fCor"></select>
     <select id="fStatus"><option value="">Disponíveis e reservados</option><option value="disp">Só disponíveis</option><option value="resv">Só reservados</option></select>
-    <button class="btn sm" id="btnExpand">Recolher praças</button>
-    <button class="btn sm" id="btnExport">Exportar Excel</button>
+    <button class="btn sm" id="btnSortMadc" aria-pressed="false">Ordenar data mais próxima</button>
     <span class="count" id="count"></span>
   </div>
   <div class="tablewrap">
@@ -268,6 +277,7 @@ table.ed{border-collapse:collapse;width:100%}
 
 <!-- RESUMO -->
 <section class="view" id="v-resumo">
+  <div class="chips" id="chipsResumo" role="group" aria-label="Filtrar por praça"></div>
   <div class="strip" id="strip"></div>
   <div class="rgrid">
     <div class="panel">
@@ -363,7 +373,7 @@ const CFG_REV = 2; // sobe quando novos cadastros padrão são incluídos no arq
 const PWD = "Y3Jpc3JubHQ=";
 
 /* ============ ESTADO ============ */
-let DB, VEH = [], unlocked = false, showVersions = true;
+let DB, VEH = [], unlocked = false, showVersions = true, sortByMadc = false, selPraca = "";
 const collapsed = new Set();
 const famOpen = new Set();
 
@@ -467,12 +477,24 @@ function fillFilters(){
     el.innerHTML = `<option value="">${label}</option>` + vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
     if(vals.includes(cur)) el.value=cur;
   };
-  set("fPraca","Todas as praças",pracaOrder(VEH.map(v=>v.praca)));
   set("fFam","Todas as famílias",[...new Set(VEH.map(v=>v.familia))].sort());
   set("fCor","Todas as cores",[...new Set(VEH.map(v=>v.corNome||norm(v.cor)))].sort());
+  renderPracaChips();
+}
+function renderPracaChips(){
+  const pr = pracaOrder(VEH.map(v=>v.praca));
+  if(selPraca && !pr.includes(selPraca)) selPraca = "";
+  const cntP = {}; VEH.forEach(v=>cntP[v.praca]=(cntP[v.praca]||0)+1);
+  const chip = (val,label,count,color,extra="") =>
+    `<button class="pchip${extra}" role="button" data-praca="${esc(val)}" aria-pressed="${selPraca===val}" ${color?`style="--c:${color}"`:""}>${esc(label)}${count!=null?` <span class="ct">${count}</span>`:""}</button>`;
+  let html = chip("","Todas",VEH.length,"", " all");
+  for(const p of pr) html += chip(p,p,cntP[p],pracaColor(p));
+  for(const id of ["chipsPraca","chipsResumo"]){
+    const el=document.getElementById(id); if(el) el.innerHTML = html;
+  }
 }
 function filtered(){
-  const q=norm(document.getElementById("fQ").value), p=fPraca.value, f=fFam.value, c=fCor.value;
+  const q=norm(document.getElementById("fQ").value), p=selPraca, f=fFam.value, c=fCor.value;
   return VEH.filter(v=>{
     if(p && v.praca!==p) return false;
     if(f && v.familia!==f) return false;
@@ -485,6 +507,16 @@ function filtered(){
   });
 }
 function sortVeh(list){
+  if(sortByMadc){
+    // Mais próxima primeiro; sem data vai para o fim. Agrupa por praça só quando "Todas" está selecionado.
+    const key = v => v.madcF || "9999-99-99";
+    const byPraca = !selPraca;
+    const ord = pracaOrder(list.map(v=>v.praca));
+    return [...list].sort((a,b)=>
+      (byPraca ? ord.indexOf(a.praca)-ord.indexOf(b.praca) : 0)
+      || key(a).localeCompare(key(b))
+      || a.familia.localeCompare(b.familia) || a.chassi.localeCompare(b.chassi));
+  }
   const ord = pracaOrder(list.map(v=>v.praca));
   return [...list].sort((a,b)=> ord.indexOf(a.praca)-ord.indexOf(b.praca)
     || a.familia.localeCompare(b.familia) || (a.modelo||a.versao).localeCompare(b.modelo||b.versao)
@@ -522,7 +554,6 @@ function renderTotal(){
     h += `<tr class="tot" data-praca="${esc(g.praca)}"><td colspan="9" style="color:${col}">${isC?"▸":"▾"} TOTAL ${esc(g.praca)} · ${g.rows.length} veículo${g.rows.length===1?"":"s"}</td></tr>`;
   }
   tb.innerHTML = h;
-  document.getElementById("btnExpand").textContent = collapsed.size ? "Expandir praças" : "Recolher praças";
 }
 function statusCell(v){
   if(v.reserva){
@@ -594,14 +625,15 @@ function renderResumo(){
   if(!em){ em=document.createElement("div"); em.id="resEmpty"; em.className="empty"; em.textContent="Nenhuma planilha importada ainda. Abra a aba AJUSTES e importe o relatório de veículos."; rz.prepend(em); }
   em.hidden = VEH.length>0; rz.querySelector(".strip").hidden = rz.querySelector(".rgrid").hidden = !VEH.length;
   if(!VEH.length) return;
-  const pr = pracaOrder(VEH.map(v=>v.praca)), tot = VEH.length;
-  const by = (keyFn) => { const m=new Map(); for(const v of VEH){const k=keyFn(v);if(!m.has(k))m.set(k,{});const o=m.get(k);o[v.praca]=(o[v.praca]||0)+1;o.__t=(o.__t||0)+1;} return m; };
-  const cntP = {}; VEH.forEach(v=>cntP[v.praca]=(cntP[v.praca]||0)+1);
-  const resv = VEH.filter(v=>v.reserva).length, disp=tot-resv;
+  const base = selPraca ? VEH.filter(v=>v.praca===selPraca) : VEH;
+  const pr = pracaOrder(base.map(v=>v.praca)), tot = base.length;
+  const by = (keyFn) => { const m=new Map(); for(const v of base){const k=keyFn(v);if(!m.has(k))m.set(k,{});const o=m.get(k);o[v.praca]=(o[v.praca]||0)+1;o.__t=(o.__t||0)+1;} return m; };
+  const cntP = {}; base.forEach(v=>cntP[v.praca]=(cntP[v.praca]||0)+1);
+  const resv = base.filter(v=>v.reserva).length, disp=tot-resv;
   let s = `<div class="cell" style="--c:#e7e8ea"><div class="lb">TOTAL A FATURAR</div><div class="n">${tot}</div><div class="s">${pr.length} praça${pr.length===1?"":"s"}</div><div class="bar2"><i style="width:100%"></i></div></div>`;
   s += `<div class="cell" style="--c:#4fd38a"><div class="lb">DISPONÍVEIS</div><div class="n">${disp}</div><div class="s">${tot?Math.round(disp/tot*100):0}% do total</div><div class="bar2"><i style="width:${tot?disp/tot*100:0}%"></i></div></div>`;
   s += `<div class="cell" style="--c:#ff8585"><div class="lb">RESERVADOS</div><div class="n">${resv}</div><div class="s">${tot?Math.round(resv/tot*100):0}% do total</div><div class="bar2"><i style="width:${tot?resv/tot*100:0}%"></i></div></div>`;
-  for(const p of pr){ const n=cntP[p], rp=VEH.filter(v=>v.praca===p&&v.reserva).length, pc=tot?Math.round(n/tot*100):0;
+  for(const p of pr){ const n=cntP[p], rp=base.filter(v=>v.praca===p&&v.reserva).length, pc=tot?Math.round(n/tot*100):0;
     s += `<div class="cell" style="--c:${pracaColor(p)}"><div class="lb">${esc(p)}</div><div class="n">${n}</div><div class="s">${pc}% · ${rp} reservado${rp===1?"":"s"}</div><div class="bar2"><i style="width:${pc}%"></i></div></div>`; }
   document.getElementById("strip").innerHTML = s;
 
@@ -982,7 +1014,7 @@ function showTab(t){
 }
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 document.getElementById("pendBadge").onclick = ()=>showTab("ajustes");
-["fQ","fPraca","fFam","fCor","fStatus"].forEach(id=>document.getElementById(id).addEventListener("input",renderTotal));
+["fQ","fFam","fCor","fStatus"].forEach(id=>document.getElementById(id).addEventListener("input",renderTotal));
 document.getElementById("tbTotal").addEventListener("click",e=>{
   const req=e.target.closest("[data-req]"); if(req){ openReqModal(req.dataset.req); return; }
   const tr=e.target.closest("tr.tot"); if(!tr) return; const p=tr.dataset.praca;
@@ -991,11 +1023,20 @@ document.getElementById("tbTotal").addEventListener("click",e=>{
 mCancel.onclick = closeModal;
 modal.addEventListener("click", e=>{ if(e.target===modal) closeModal(); });
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && modal.classList.contains("on")) closeModal(); });
-document.getElementById("btnExpand").onclick = ()=>{
-  if(collapsed.size) collapsed.clear(); else pracaOrder(VEH.map(v=>v.praca)).forEach(p=>collapsed.add(p));
+function onChipClick(e){
+  const b=e.target.closest(".pchip"); if(!b) return;
+  selPraca = b.dataset.praca || "";
+  renderPracaChips(); renderTotal(); renderResumo();
+}
+document.getElementById("chipsPraca").addEventListener("click",onChipClick);
+document.getElementById("chipsResumo").addEventListener("click",onChipClick);
+document.getElementById("btnSortMadc").onclick = (e)=>{
+  sortByMadc = !sortByMadc;
+  e.currentTarget.setAttribute("aria-pressed", sortByMadc);
+  e.currentTarget.classList.toggle("btn", true);
+  e.currentTarget.textContent = sortByMadc ? "Ordenação padrão" : "Ordenar data mais próxima";
   renderTotal();
 };
-document.getElementById("btnExport").onclick = exportExcel;
 document.getElementById("btnVer").onclick = ()=>{ showVersions=!showVersions; famOpen.clear(); renderResumo(); };
 document.getElementById("mxModelo").addEventListener("click",e=>{
   const tr=e.target.closest("tr.famrow"); if(!tr) return; const f=tr.dataset.fam, k=showVersions?"x:"+f:f;
