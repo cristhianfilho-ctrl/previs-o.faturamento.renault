@@ -283,6 +283,7 @@ table.ed{border-collapse:collapse;width:100%}
   <div class="bar">
     <input type="search" id="fQ" placeholder="Buscar chassi, modelo, opção…">
     <select id="fFam"></select>
+    <select id="fModelo"></select>
     <select id="fCor"></select>
     <select id="fStatus"><option value="">Disponíveis e reservados</option><option value="disp">Só disponíveis</option><option value="resv">Só reservados</option></select>
     <button class="btn sm" id="btnSortMadc" aria-pressed="false">Ordenar data mais próxima</button>
@@ -387,6 +388,14 @@ const DEFAULT_CFG = {
 };
 
 const LOJAS = ["Imbiribeira","Piedade","Afogados","Olinda","Epitácio","Iguatemi","Lauro"];
+const LOJAS_POR_PRACA = {
+  "PERNAMBUCO": ["Imbiribeira","Piedade","Afogados","Olinda"],
+  "PARAÍBA":    ["Epitácio"],
+  "BAHIA":      ["Iguatemi","Lauro"]
+};
+// Lojas válidas para a praça de um veículo; se a praça não estiver mapeada (ex.: "SEM PRAÇA"), oferece todas.
+function lojasDaPraca(praca){ return LOJAS_POR_PRACA[praca] || LOJAS; }
+function optLojas(lojas, sel){ return lojas.map(l=>`<option ${sel===l?"selected":""}>${esc(l)}</option>`).join(""); }
 const RESV_TO = ["cristhian.filho@grupovia1.com.br","ednita.pinto@eurovia.com.br","pedro.lins@eurovia.com.br"];
 
 const PRACA_COLORS = { "BAHIA":"#3dba74", "PARAÍBA":"#e8782f", "PERNAMBUCO":"#f5c518" };
@@ -504,6 +513,7 @@ function fillFilters(){
     if(vals.includes(cur)) el.value=cur;
   };
   set("fFam","Todas as famílias",[...new Set(VEH.map(v=>v.familia))].sort());
+  set("fModelo","Todos os modelos",[...new Set(VEH.map(v=>v.modelo||("⚠ "+v.versao)))].sort());
   set("fCor","Todas as cores",[...new Set(VEH.map(v=>v.corNome||norm(v.cor)))].sort());
   renderPracaChips();
 }
@@ -520,10 +530,11 @@ function renderPracaChips(){
   }
 }
 function filtered(){
-  const q=norm(document.getElementById("fQ").value), p=selPraca, f=fFam.value, c=fCor.value;
+  const q=norm(document.getElementById("fQ").value), p=selPraca, f=fFam.value, md=fModelo.value, c=fCor.value;
   return VEH.filter(v=>{
     if(p && v.praca!==p) return false;
     if(f && v.familia!==f) return false;
+    if(md && (v.modelo||("⚠ "+v.versao))!==md) return false;
     if(c && (v.corNome||norm(v.cor))!==c) return false;
     const st=document.getElementById("fStatus").value;
     if(st==="resv" && !v.reserva) return false;
@@ -614,7 +625,7 @@ function openReqModal(chassi){
   mVeh.innerHTML=`<b>${esc(v.modelo||v.versao)}</b> · ${esc(v.corNome||v.cor||"—")}<br><span class="mono">${esc(v.chassi)}</span> · ${esc(v.praca)}${v.madcF?` · prev. ${fmtDate(v.madcF)}`:""}`;
   mBody.innerHTML=`
     <label for="mLoja">Loja</label>
-    <select class="fld" id="mLoja">${LOJAS.map(l=>`<option>${esc(l)}</option>`).join("")}</select>
+    <select class="fld" id="mLoja">${optLojas(lojasDaPraca(v.praca))}</select>
     <label for="mVend">Vendedor</label>
     <input class="fld" id="mVend" placeholder="Seu nome">
     <label for="mCli">Nome do cliente</label>
@@ -816,7 +827,7 @@ function reserveForm(chassi){
   const v = resolve(r), o = DB.cfg.reservas[chassi]||{};
   box.innerHTML = `<div class="veh" style="margin-top:12px"><b>${esc(v.modelo||v.versao)}</b> · ${esc(v.corNome||v.cor||"—")} · <span class="mono">${esc(chassi)}</span> · ${esc(v.praca)}</div>
   <div class="vform">
-    <div><label for="rLoja">Loja</label><select class="fld" id="rLoja">${LOJAS.map(l=>`<option ${o.loja===l?"selected":""}>${esc(l)}</option>`).join("")}</select></div>
+    <div><label for="rLoja">Loja</label><select class="fld" id="rLoja">${optLojas(lojasDaPraca(v.praca), o.loja)}</select></div>
     <div><label for="rVend">Vendedor</label><input class="fld" id="rVend" value="${esc(o.vendedor||"")}" placeholder="Nome do vendedor"></div>
     <div><label for="rCli">Cliente</label><input class="fld" id="rCli" value="${esc(o.cliente||"")}" placeholder="Nome do cliente"></div>
   </div>
@@ -1121,7 +1132,7 @@ function showTab(t){
 }
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 document.getElementById("pendBadge").onclick = ()=>showTab("ajustes");
-["fQ","fFam","fCor","fStatus"].forEach(id=>document.getElementById(id).addEventListener("input",renderTotal));
+["fQ","fFam","fModelo","fCor","fStatus"].forEach(id=>document.getElementById(id).addEventListener("input",renderTotal));
 document.getElementById("tbTotal").addEventListener("click",e=>{
   const req=e.target.closest("[data-req]"); if(req){ openReqModal(req.dataset.req); return; }
   const tr=e.target.closest("tr.tot"); if(!tr) return; const p=tr.dataset.praca;
