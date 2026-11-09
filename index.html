@@ -27,32 +27,56 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans
 button,input,select{font-family:inherit;font-size:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
 
-/* topo */
-.top{position:relative;background:#141414;border-bottom:3px solid var(--yellow);padding:0 20px}
-.topbar{display:flex;flex-wrap:nowrap;align-items:center;gap:18px;min-height:78px}
-.logo{flex:0 0 auto;display:flex;align-items:center;gap:9px}
-.logo .dia{height:46px;width:auto;display:block}
-.logo .wm{height:16px;width:auto;display:block}
-.divider{flex:0 0 auto;width:2px;align-self:stretch;background:#2e2e2e;margin:16px 0}
-.brand{flex:1 1 auto;min-width:0;padding:8px 0}
-.brand h1{margin:0;font-size:clamp(17px,3.4vw,33px);font-weight:800;letter-spacing:1.2px;line-height:1.04;text-transform:uppercase}
-.brand h1 .hl{color:var(--yellow)}
-.brand .sub{color:#9a9a9a;font-size:clamp(8.5px,1.5vw,11.5px);font-weight:600;letter-spacing:clamp(1px,.5vw,3px);margin-top:7px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brand .meta{color:var(--muted);font-size:12.5px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* topo — cabeçalho moderno */
+.top{position:relative;overflow:hidden;padding:0 26px;
+  background:
+    radial-gradient(120% 140% at 88% -40%, rgba(255,204,51,.12), transparent 60%),
+    linear-gradient(180deg,#191919 0%, #121212 100%);
+  border-bottom:1px solid #000;
+  box-shadow:0 2px 0 var(--yellow), 0 10px 26px -14px rgba(0,0,0,.9);}
+.top::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.028) 0 2px, transparent 2px 9px);
+  mask-image:linear-gradient(90deg, transparent, #000 55%);}
+.top::after{content:"";position:absolute;right:-40px;top:50%;transform:translateY(-50%);
+  width:230px;height:230px;pointer-events:none;opacity:.06;
+  background:url('data:image/png;base64,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') center/contain no-repeat;}
+.topbar{position:relative;z-index:1;display:flex;flex-wrap:nowrap;align-items:center;gap:22px;min-height:92px}
+.logo{flex:0 0 auto;display:flex;align-items:center;gap:10px}
+.logo .dia{height:50px;width:auto;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.logo .wm{height:17px;width:auto;display:block}
+.divider{flex:0 0 auto;width:1px;align-self:stretch;margin:22px 0;
+  background:linear-gradient(180deg, transparent, #3a3a3a 20%, #3a3a3a 80%, transparent)}
+.brand{flex:1 1 auto;min-width:0;padding:10px 0;position:relative}
+.brand .kicker{display:inline-flex;align-items:center;gap:9px;margin-bottom:9px}
+.brand .kicker b{color:var(--ink);background:var(--yellow);font-size:10.5px;font-weight:800;letter-spacing:1.5px;padding:3px 9px;border-radius:3px;text-transform:uppercase;white-space:nowrap}
+.brand .kicker span{color:#8a8f96;font-size:10.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand h1{margin:0;font-size:clamp(20px,4.2vw,40px);font-weight:800;letter-spacing:-.5px;line-height:.98;text-transform:uppercase;
+  background:linear-gradient(180deg,#ffffff 0%, #d4d6d9 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 1px 0 rgba(0,0,0,.2)}
+.brand h1 .hl{-webkit-text-fill-color:var(--yellow);color:var(--yellow)}
+.brand .meta{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;margin-top:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .meta .pulse{flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:var(--ok,#3dba74);box-shadow:0 0 0 0 rgba(61,186,116,.5);animation:pulse 2.4s infinite}
+.brand .meta.cold .pulse{background:#6b7178;animation:none;box-shadow:none}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,186,116,.45)}70%{box-shadow:0 0 0 7px rgba(61,186,116,0)}100%{box-shadow:0 0 0 0 rgba(61,186,116,0)}}
 @media (max-width:620px){
-  .top{padding:0 12px}
-  .hdr-actions{position:absolute;top:10px;right:12px;padding:0}
+  .top{padding:0 14px}
+  .hdr-actions{position:absolute;top:12px;right:14px;padding:0;z-index:2}
   .btn-sync{padding:6px 12px;font-size:13px}
   .sync-note{display:none}
-  .topbar{gap:11px;min-height:62px}
-  .logo .dia{height:34px}
+  .topbar{gap:13px;min-height:72px}
+  .top::after{display:none}
+  .logo .dia{height:38px}
   .logo .wm{height:12px}
   .divider{display:none}
-  .brand h1{letter-spacing:.5px;line-height:1.1}
-  .brand .sub{letter-spacing:.5px}
+  .brand{padding:6px 0}
+  .brand .kicker{margin-bottom:6px}
+  .brand .kicker span{letter-spacing:1.4px}
+  .brand h1{line-height:1}
+  .brand .meta{font-size:11.5px;margin-top:8px}
 }
-@media (max-width:380px){ .logo .dia{height:30px} .logo .wm{height:11px} }
-.hdr-actions{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding:8px 0}
+@media (max-width:380px){ .logo .dia{height:32px} .logo .wm{height:11px} .brand .kicker span{display:none} }
+@media (prefers-reduced-motion:reduce){ .brand .meta .pulse{animation:none} }
+.hdr-actions{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding:8px 0;position:relative;z-index:2}
 .btn-sync[hidden]{display:none}
 .btn-sync{display:inline-flex;align-items:center;gap:7px;background:var(--yellow);color:var(--ink);border:0;padding:8px 16px;border-radius:3px;font-weight:800;letter-spacing:.4px;cursor:pointer;white-space:nowrap}
 .btn-sync:hover{filter:brightness(1.05)}
@@ -235,9 +259,9 @@ table.ed{border-collapse:collapse;width:100%}
     </div>
     <div class="divider" aria-hidden="true"></div>
     <div class="brand">
+      <div class="kicker"><b>Central Eurovia</b><span>Rede Renault · PE · PB · BA</span></div>
       <h1>PREVISÃO FATURAMENTO <span class="hl">FÁBRICA</span></h1>
-      <div class="sub">REDE RENAULT · PERNAMBUCO · PARAÍBA · BAHIA</div>
-      <div class="meta" id="meta"></div>
+      <div class="meta cold" id="meta"></div>
     </div>
     <div class="hdr-actions">
       <button class="btn-sync" id="btnSync" title="Baixar a última versão do backup no Drive" hidden><span class="sp"></span><span class="lbl">Atualizar</span></button>
@@ -285,8 +309,8 @@ table.ed{border-collapse:collapse;width:100%}
       <table class="mx" id="mxModelo"></table>
     </div>
     <div class="panel">
-      <h2>Cores por praça</h2>
-      <table class="mx" id="mxCor"></table>
+      <h2>Previsão de faturamento por mês</h2>
+      <table class="mx" id="mxMes"></table>
     </div>
   </div>
 </section>
@@ -358,6 +382,7 @@ const DEFAULT_CFG = {
   },
   overrides: {},
   reservas: {},
+  reservasHist: [],
   drive: { readUrl: "", scriptUrl: "https://script.google.com/macros/s/AKfycbx3LWOmSKc9mx3df84kaWCeIOJDfJ6y2-wyNn7qwuC1MCfe2O4dTPW2oVXfE_xjZX2k/exec" }
 };
 
@@ -399,6 +424,7 @@ function load(){
       if(d && d.cfg && Array.isArray(d.rows)){
         d.cfg = Object.assign(clone(DEFAULT_CFG), d.cfg);
         if(!d.cfg.reservas) d.cfg.reservas = {};
+        if(!Array.isArray(d.cfg.reservasHist)) d.cfg.reservasHist = [];
         if(!d.cfg.drive) d.cfg.drive = { readUrl:"", scriptUrl:"" };
         if(!d.cfg.drive.scriptUrl) d.cfg.drive.scriptUrl = DEFAULT_CFG.drive.scriptUrl;
         if((d.cfgRev||1) < CFG_REV){
@@ -581,6 +607,8 @@ function mailReserva({chassi,praca,familia,modelo,versao,cor,madc,loja,vendedor,
 }
 function openReqModal(chassi){
   const v=VEH.find(x=>x.chassi===chassi); if(!v) return;
+  restoreModalActs();
+  const mOk=document.getElementById("mOk");
   mTitle.textContent="Solicitar reserva";
   mSub.textContent="Preencha os dados; será aberto um e-mail no Gmail para você conferir e enviar.";
   mVeh.innerHTML=`<b>${esc(v.modelo||v.versao)}</b> · ${esc(v.corNome||v.cor||"—")}<br><span class="mono">${esc(v.chassi)}</span> · ${esc(v.praca)}${v.madcF?` · prev. ${fmtDate(v.madcF)}`:""}`;
@@ -656,15 +684,19 @@ function renderResumo(){
   h += `<tr class="gt"><td>TOTAL</td>${pr.map(p=>`<td>${cntP[p]}</td>`).join("")}<td class="t">${tot}</td></tr>`;
   document.getElementById("mxModelo").innerHTML = h;
 
-  const corM = by(v=>(v.corNome||"⚠ SEM CADASTRO")+"||"+norm(v.cor));
-  const mxC = colMax(corM);
-  let c = `<tr><th>COR</th>${pr.map(p=>`<th>${esc(p)}</th>`).join("")}<th>TOTAL</th></tr>`;
-  for(const [k,o] of [...corM.entries()].sort((a,b)=>b[1].__t-a[1].__t)){
-    const [nome,code]=k.split("||");
-    c += `<tr class="ver"><td style="padding-left:12px">${esc(nome)}<span class="code">${esc(code)}</span></td>${pr.map(p=>heat(o[p]||0,p,mxC)).join("")}<td class="t">${o.__t}</td></tr>`;
+  const MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+  const mesKey = v => { const m=/^(\d{4})-(\d{2})/.exec(v.madcF||""); return m ? m[1]+"-"+m[2] : "ZZZZ"; };
+  const mesLabel = k => k==="ZZZZ" ? "Sem previsão" : `${MESES[+k.slice(5,7)-1]}/${k.slice(0,4)}`;
+  const mesM = by(mesKey);
+  const mxM = colMax(mesM);
+  const chaves = [...mesM.keys()].sort(); // ordem cronológica; "ZZZZ" (sem data) vai para o fim
+  let c = `<tr><th>MÊS</th>${pr.map(p=>`<th>${esc(p)}</th>`).join("")}<th>TOTAL</th></tr>`;
+  for(const k of chaves){
+    const o=mesM.get(k), sem=k==="ZZZZ";
+    c += `<tr class="ver"><td style="padding-left:12px${sem?';color:var(--muted)':''}">${esc(mesLabel(k))}</td>${pr.map(p=>heat(o[p]||0,p,mxM)).join("")}<td class="t">${o.__t}</td></tr>`;
   }
   c += `<tr class="gt"><td>TOTAL</td>${pr.map(p=>`<td>${cntP[p]}</td>`).join("")}<td class="t">${tot}</td></tr>`;
-  document.getElementById("mxCor").innerHTML = c;
+  document.getElementById("mxMes").innerHTML = c;
   document.getElementById("btnVer").textContent = showVersions ? "Recolher versões" : "Mostrar versões";
 }
 
@@ -695,6 +727,7 @@ function renderAjustes(){
   const pend = pendencias();
   const ovs = Object.entries(DB.cfg.overrides);
   const resvs = Object.entries(DB.cfg.reservas);
+  const hist = DB.cfg.reservasHist || [];
   const at = DB.meta.at ? fmtNow(new Date(DB.meta.at)) : "nenhuma importação";
   let h = `
   <div class="box">
@@ -735,6 +768,11 @@ function renderAjustes(){
     ${resvs.length?`<h4 style="margin:20px 0 8px">Veículos reservados (${resvs.length})</h4><table class="ed"><thead><tr><th>CHASSI</th><th>CLIENTE</th><th>LOJA</th><th>VENDEDOR</th><th>DESDE</th><th></th></tr></thead><tbody>
       ${resvs.map(([k,o])=>`<tr><td class="mono">${esc(k)}</td><td>${esc(o.cliente||"—")}</td><td>${esc(o.loja||"—")}</td><td>${esc(o.vendedor||"—")}</td><td class="muted">${o.at?esc(fmtNow(new Date(o.at))):"—"}</td><td style="white-space:nowrap"><button class="btn sm" data-act="editres" data-key="${esc(k)}">Editar</button> <button class="x" title="Liberar reserva" data-act="delres" data-key="${esc(k)}">×</button></td></tr>`).join("")}
     </tbody></table>`:""}
+    ${hist.length?`<div class="rowflex" style="margin:22px 0 8px"><h4 style="margin:0;margin-right:auto">Reservas encerradas (${hist.length})</h4><button class="btn sm" id="btnHistExp">Exportar histórico</button><button class="btn sm danger" data-act="histclear">Limpar histórico</button></div>
+    <p class="help" style="margin-top:0">Reservas de veículos que saíram da planilha. Ficam aqui como registro de quem tinha reservado cada chassi.</p>
+    <div class="cad"><div class="scroll"><table class="ed"><thead><tr><th>CHASSI</th><th>CLIENTE</th><th>LOJA</th><th>VENDEDOR</th><th>RESERVADO</th><th>ENCERRADA</th><th></th></tr></thead><tbody>
+      ${hist.map((o,idx)=>`<tr><td class="mono">${esc(o.chassi)}</td><td>${esc(o.cliente||"—")}</td><td>${esc(o.loja||"—")}</td><td>${esc(o.vendedor||"—")}</td><td class="muted">${o.at?esc(fmtNow(new Date(o.at))):"—"}</td><td class="muted">${o.encerradaEm?esc(fmtNow(new Date(o.encerradaEm))):"—"}</td><td style="white-space:nowrap"><button class="btn sm" data-act="histback" data-idx="${idx}" title="Voltar para reservas ativas">Reativar</button> <button class="x" title="Apagar do histórico" data-act="histdel" data-idx="${idx}">×</button></td></tr>`).join("")}
+    </tbody></table></div></div>`:""}
   </div>
   <div class="box"><h3>Backup no Drive</h3>
     <p class="help">Configure uma vez e todos que abrirem o painel recebem sua última versão automaticamente. O envio usa o Apps Script (arquivo AppsScript_Backup_Faturar.gs); a leitura pode usar o mesmo script ou um link direto do arquivo no Drive compartilhado como "qualquer pessoa com o link".</p>
@@ -795,6 +833,8 @@ function wireAjustes(){
   document.getElementById("btnFind").onclick = ()=>vehicleForm(norm(vChassi.value));
   vChassi.onkeydown = e=>{ if(e.key==="Enter") vehicleForm(norm(vChassi.value)); };
   document.getElementById("btnFindRes").onclick = ()=>reserveForm(norm(rChassi.value));
+  const bHistExp=document.getElementById("btnHistExp");
+  if(bHistExp) bHistExp.onclick = exportHist;
   rChassi.onkeydown = e=>{ if(e.key==="Enter") reserveForm(norm(rChassi.value)); };
   const drvScript=document.getElementById("drvScript"), drvRead=document.getElementById("drvRead");
   const saveDrive=()=>{ DB.cfg.drive.scriptUrl=drvScript.value.trim(); DB.cfg.drive.readUrl=drvRead.value.trim(); save(); updateSyncUI(); };
@@ -850,6 +890,11 @@ document.getElementById("adj").addEventListener("click", e=>{
   if(act==="delres"){ if(!confirm(`Liberar a reserva do chassi ${key}?`)) return; delete DB.cfg.reservas[key]; save(); refresh(); toast("Reserva liberada"); if(document.getElementById("rChassi")) rChassi.value=key; if(document.getElementById("rForm")) reserveForm(key); }
   if(act==="editres"){ rChassi.value=key; reserveForm(key); rChassi.scrollIntoView({block:"center"}); }
   if(act==="editov"){ vChassi.value=key; vehicleForm(key); vChassi.scrollIntoView({block:"center"}); }
+  if(act==="histdel"){ const idx=+b.dataset.idx; if(!confirm("Apagar este registro do histórico?")) return; DB.cfg.reservasHist.splice(idx,1); save(); refresh(); toast("Registro apagado"); }
+  if(act==="histback"){ const idx=+b.dataset.idx, o=DB.cfg.reservasHist[idx]; if(!o) return;
+    DB.cfg.reservas[o.chassi]={cliente:o.cliente||"",loja:o.loja||"",vendedor:o.vendedor||"",at:o.at||Date.now()};
+    DB.cfg.reservasHist.splice(idx,1); save(); refresh(); toast("Reserva reativada"); }
+  if(act==="histclear"){ if(!confirm(`Limpar todo o histórico de reservas encerradas (${DB.cfg.reservasHist.length})?`)) return; DB.cfg.reservasHist=[]; save(); refresh(); toast("Histórico limpo"); }
 });
 
 /* ============ IMPORTAÇÃO ============ */
@@ -894,17 +939,32 @@ function importFile(file){
     try{
       const {rows,semConta} = parseSheet(new Uint8Array(rd.result));
       if(!rows.length) throw new Error("Nenhum chassi válido encontrado na planilha.");
+      const novos = new Set(rows.map(r=>r.chassi));
+      const orfaos = Object.keys(DB.cfg.reservas).filter(ch=>!novos.has(ch)); // reservas que saíram da planilha
       DB.rows = rows; DB.meta = {file:file.name, at:Date.now()}; save(); refresh();
       const p = pendencias().length;
       msg().innerHTML = `<b style="color:var(--ok)">${rows.length} veículos importados de ${esc(file.name)}.</b>` +
         (p?` <span style="color:var(--warn)">${p} código${p>1?"s":""} sem cadastro — destine abaixo.</span>`:"") +
+        (orfaos.length?` <span style="color:var(--warn)">${orfaos.length} reserva${orfaos.length>1?"s":""} saiu da planilha — confira.</span>`:"") +
         (semConta?` <span style="color:var(--warn)">A coluna Conta destinatária não veio; todos foram tratados como conta em branco.</span>`:"");
       toast("Planilha importada");
+      if(orfaos.length) reviewOrphans(orfaos);
     }catch(err){ msg().innerHTML = `<span style="color:var(--bad)">${esc(err.message)}</span>`; }
   };
   rd.readAsArrayBuffer(file);
 }
 fileXlsx.onchange = ()=>{ if(fileXlsx.files[0]) importFile(fileXlsx.files[0]); fileXlsx.value=""; };
+function exportHist(){
+  const h = DB.cfg.reservasHist || [];
+  if(!h.length){ toast("Nenhum histórico para exportar"); return; }
+  const esc2 = s => `"${String(s??"").replace(/"/g,'""')}"`;
+  const head = ["Chassi","Cliente","Loja","Vendedor","Reservado em","Encerrada em","Motivo"];
+  const linhas = h.map(o=>[o.chassi,o.cliente,o.loja,o.vendedor,
+    o.at?fmtNow(new Date(o.at)):"", o.encerradaEm?fmtNow(new Date(o.encerradaEm)):"", o.motivo||""].map(esc2).join(";"));
+  const csv = "\ufeff" + [head.map(esc2).join(";"), ...linhas].join("\r\n");
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`reservas_encerradas_${new Date().toISOString().slice(0,10)}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
 function exportCfg(){
   const blob = new Blob([JSON.stringify({tipo:"eurovia_faturar_backup",versao:1,at:new Date().toISOString(),cfg:DB.cfg,rows:DB.rows,meta:DB.meta},null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`faturar_config_${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
@@ -951,6 +1011,7 @@ function applyBackup(data){
   if(!cfg || !cfg.versoes) throw new Error("Arquivo de backup inválido.");
   DB.cfg = Object.assign(clone(DEFAULT_CFG), cfg);
   if(!DB.cfg.drive) DB.cfg.drive = { readUrl:"", scriptUrl:"" };
+  if(!Array.isArray(DB.cfg.reservasHist)) DB.cfg.reservasHist = [];
   if(Array.isArray(data.rows)) DB.rows = data.rows;
   if(data.meta) DB.meta = data.meta;
   save();
@@ -991,13 +1052,59 @@ function pushToDrive(){
     .finally(()=>{ if(btn){ btn.disabled=false; btn.textContent=btn.dataset.lbl||"Enviar backup ao Drive"; } });
 }
 
+/* ============ RESERVAS QUE SAÍRAM DA PLANILHA ============ */
+// Ao importar, pergunta uma a uma o que fazer com cada reserva cujo chassi não veio na planilha nova.
+function reviewOrphans(lista){
+  let i = 0;
+  const finish = () => { restoreModalActs(); closeModal(); save(); refresh(); };
+  const step = () => {
+    while(i < lista.length && !DB.cfg.reservas[lista[i]]) i++;   // pula as já tratadas
+    if(i >= lista.length){ finish(); toast("Revisão de reservas concluída"); return; }
+    const ch = lista[i], r = DB.cfg.reservas[ch];
+    mTitle.textContent = `Reserva fora da planilha (${i+1}/${lista.length})`;
+    mSub.textContent = "Este chassi estava reservado e não veio na planilha nova. O que deseja fazer?";
+    mVeh.innerHTML = `<b>Cliente: ${esc(r.cliente||"—")}</b><br>${esc(r.loja||"—")} · ${esc(r.vendedor||"—")}<br><span class="mono">${esc(ch)}</span>${r.at?` · reservado em ${esc(fmtNow(new Date(r.at)))}`:""}`;
+    mBody.innerHTML = `<p class="info" style="margin:0">Se o carro foi <b>faturado</b>, arquive no histórico. Se sumiu por <b>engano</b> (planilha parcial), mantenha a reserva ativa.</p>`;
+    mErr.textContent = "";
+    const acts = modal.querySelector(".acts");
+    acts.innerHTML =
+      (lista.length - i > 1 ? `<button class="btn sm" id="oArchAll" style="margin-right:auto">Arquivar todas as restantes</button>` : "") +
+      `<button class="btn" id="oKeep">Manter ativa</button>` +
+      `<button class="btn danger" id="oArch">Arquivar (faturada)</button>`;
+    document.getElementById("oKeep").onclick = ()=>{ i++; step(); };
+    document.getElementById("oArch").onclick = ()=>{ archiveReserva(ch,"faturada"); i++; step(); };
+    const all = document.getElementById("oArchAll");
+    if(all) all.onclick = ()=>{
+      for(let j=i;j<lista.length;j++){ const c=lista[j]; if(DB.cfg.reservas[c]) archiveReserva(c,"faturada"); }
+      i = lista.length; finish(); toast("Reservas arquivadas no histórico");
+    };
+  };
+  modal.classList.add("on");
+  step();
+}
+function archiveReserva(chassi, motivo){
+  const r = DB.cfg.reservas[chassi]; if(!r) return;
+  DB.cfg.reservasHist.unshift({ chassi, cliente:r.cliente||"", loja:r.loja||"", vendedor:r.vendedor||"",
+    at:r.at||null, encerradaEm:Date.now(), motivo:motivo||"encerrada" });
+  delete DB.cfg.reservas[chassi];
+}
+// Restaura os botões padrão do modal (usado após a revisão, pois o modal é compartilhado com "Solicitar reserva").
+function restoreModalActs(){
+  const acts = modal.querySelector(".acts");
+  acts.innerHTML = `<button class="btn" id="mCancel">Cancelar</button><button class="btn pri" id="mOk"></button>`;
+  document.getElementById("mCancel").onclick = closeModal;
+}
+
 /* ============ GERAL ============ */
 function toast(t){ const el=document.getElementById("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove("show"),2400); }
 function renderMeta(){
-  const at = DB.meta.at ? "lida em "+fmtNow(new Date(DB.meta.at)) : "";
-  document.getElementById("meta").textContent = VEH.length||DB.meta.at
-    ? `Eurovia Renault · ${DB.meta.file||"—"} · ${VEH.length} veículos · ${at}`
-    : "Eurovia Renault · nenhuma planilha importada";
+  const m = document.getElementById("meta"), has = VEH.length || DB.meta.at;
+  const at = DB.meta.at ? fmtNow(new Date(DB.meta.at)) : "";
+  const txt = has
+    ? `${VEH.length} veículos · atualizado ${at}`
+    : "nenhuma planilha importada";
+  m.classList.toggle("cold", !has);
+  m.innerHTML = `<span class="pulse"></span><span>${esc(txt)}</span>`;
   const p = pendencias(), n = p.reduce((s,x)=>s+x.n,0), b=document.getElementById("pendBadge");
   b.classList.toggle("show", p.length>0);
   b.textContent = `⚠ ${p.length} código${p.length===1?"":"s"} sem cadastro (${n} veículo${n===1?"":"s"})`;
